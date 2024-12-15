@@ -1,5 +1,5 @@
 from .terminal import tcgetattr, tcsetattr, tcsendbreak, tcdrain, tcflush, tcflow
-from .tty import cfmakecbreak, cfmakeraw, set_raw, set_cbreak
+from .tty import cfmakecbreak, cfmakeraw, set_raw, set_cbreak, TTY, raw, cbreak
 from .c import (
     Termios,
     STDIN,

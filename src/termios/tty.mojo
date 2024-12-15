@@ -1,3 +1,4 @@
+from collections import Optional
 import .c
 from .terminal import tcgetattr, tcsetattr
 
