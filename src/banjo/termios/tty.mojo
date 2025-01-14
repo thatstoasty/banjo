@@ -11,7 +11,7 @@ alias OSPEED = 5
 alias CC = 6
 
 
-fn cfmakeraw(inout mode: c.Termios):
+fn cfmakeraw(mut mode: c.Termios):
     """Make Termios mode raw.
     This is roughly equivalent to CPython's `cfmakeraw()`.
 
@@ -59,7 +59,7 @@ fn cfmakeraw(inout mode: c.Termios):
     mode.c_cc[c.VTIME] = 0
 
 
-fn cfmakecbreak(inout mode: c.Termios):
+fn cfmakecbreak(mut mode: c.Termios):
     """Make Termios mode cbreak.
     This is roughly equivalent to CPython's `cfmakecbreak()`.
 

@@ -14,8 +14,7 @@ fn get_key_unix() raises -> String:
 fn get_key() raises -> String:
     print("Press c to exit.")
     var k: String = ""
-    var old_settings = tcgetattr(STDIN)
-    _ = set_raw(STDIN)
+    var old_settings = set_raw(STDIN)
 
     while True:
         k = get_key_unix()

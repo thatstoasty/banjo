@@ -1,5 +1,7 @@
 from utils import StaticTuple
+from memory import Pointer, UnsafePointer
 from sys import external_call, os_is_macos
+from time.time import _CTimeSpec
 
 # C types
 alias c_void = UInt8
@@ -161,9 +163,10 @@ alias TCOFLUSH = 2
 alias TCIOFLUSH = 3
 
 
-@value
 @register_passable("trivial")
-struct Termios(Movable, Stringable):
+struct Termios(Movable, Stringable, Writable):
+    """Termios libc."""
+
     var c_iflag: tcflag_t
     """Input mode flags."""
     var c_oflag: tcflag_t
@@ -179,7 +182,7 @@ struct Termios(Movable, Stringable):
     var c_ospeed: c_speed_t
     """Output baudrate."""
 
-    fn __init__(inout self):
+    fn __init__(out self):
         self.c_cc = StaticTuple[cc_t, 20](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
         self.c_cflag = 0
         self.c_lflag = 0
@@ -188,22 +191,46 @@ struct Termios(Movable, Stringable):
         self.c_ispeed = 0
         self.c_ospeed = 0
 
-    fn __str__(self) -> String:
-        var res = String("{\n")
-        res += "c_iflag: " + str(self.c_iflag) + ",\n"
-        res += "c_oflag: " + str(self.c_oflag) + ",\n"
-        res += "c_cflag: " + str(self.c_cflag) + ",\n"
-        res += "c_lflag: " + str(self.c_lflag) + ",\n"
-        res += "c_ispeed: " + str(self.c_ispeed) + ",\n"
-        res += "c_ospeed: " + str(self.c_ospeed) + ",\n"
-        res += "c_cc: ["
+    fn write_to[W: Writer, //](self, mut writer: W):
+        """Writes the contents of the buffer to the writer.
+
+        Parameters:
+            W: The type of writer to write the contents to.
+
+        Args:
+            writer: The writer to write the contents to.
+        """
+        writer.write(
+            "Termios(",
+            "c_iflag=",
+            str(self.c_iflag),
+            ", ",
+            "c_oflag=",
+            str(self.c_oflag),
+            ", ",
+            "c_cflag=",
+            str(self.c_cflag),
+            ", ",
+            "c_lflag=",
+            str(self.c_lflag),
+            ", ",
+            "c_ispeed=",
+            str(self.c_ispeed),
+            ", ",
+            "c_ospeed=",
+            str(self.c_ospeed),
+            ", ",
+            "c_cc=(",
+        )
         for i in range(20):
-            res += str(self.c_cc[i]) + ", "
-        res += "]\n"
-        return res
+            writer.write(str(self.c_cc[i]), ", ")
+        writer.write(")")
+
+    fn __str__(self) -> String:
+        return String.write(self)
 
 
-fn tcgetattr(fd: c_int, termios_p: Reference[Termios]) -> c_int:
+fn tcgetattr(fd: c_int, termios_p: Pointer[Termios]) -> c_int:
     """Libc POSIX `tcgetattr` function
     Reference: https://man7.org/linux/man-pages/man3/tcgetattr.3.html
     Fn signature: int tcgetattr(int fd, struct Termios *termios_p).
@@ -215,7 +242,7 @@ fn tcgetattr(fd: c_int, termios_p: Reference[Termios]) -> c_int:
     return external_call["tcgetattr", c_int](fd, termios_p)
 
 
-fn tcsetattr(fd: c_int, optional_actions: c_int, termios_p: Reference[Termios]) -> c_int:
+fn tcsetattr(fd: c_int, optional_actions: c_int, termios_p: Pointer[Termios]) -> c_int:
     """Libc POSIX `tcsetattr` function
     Reference: https://man7.org/linux/man-pages/man3/tcsetattr.3.html
     Fn signature: int tcsetattr(int fd, int optional_actions, const struct Termios *termios_p).
@@ -275,7 +302,7 @@ fn tcflow(fd: c_int, action: c_int) -> c_int:
     return external_call["tcflow", c_int, c_int, c_int](fd, action)
 
 
-fn cfmakeraw(termios_p: Reference[Termios]) -> c_void:
+fn cfmakeraw(termios_p: Pointer[Termios]) -> c_void:
     """Libc POSIX `cfmakeraw` function
     Reference: https://man7.org/linux/man-pages/man3/tcsetattr.3.html
     Fn signature: void cfmakeraw(struct Termios *termios_p).
@@ -294,7 +321,7 @@ fn cfmakeraw(termios_p: Reference[Termios]) -> c_void:
 #     var ws_xpixel: UInt8   # Width, in pixels */
 #     var ws_ypixel: UInt8   # Height, in pixels */
 
-#     fn __init__(inout self):
+#     fn __init__(out self):
 #         self.ws_row = 0
 #         self.ws_col = 0
 #         self.ws_xpixel = 0
@@ -323,3 +350,84 @@ fn cfmakeraw(termios_p: Reference[Termios]) -> c_void:
 #         winsize_p: Pointer to a winsize struct.
 #     """
 #     return external_call["tcsetwinsize", c_int, c_int, UnsafePointer[winsize]](fd, winsize_p)
+
+
+fn read(fildes: c_int, buf: UnsafePointer[c_void], nbyte: UInt) -> c_int:
+    """Libc POSIX `read` function
+    Reference: https://man7.org/linux/man-pages/man3/read.3p.html
+    Fn signature: sssize_t read(int fildes, void *buf, size_t nbyte).
+
+    Args: fildes: A File Descriptor.
+        buf: A pointer to a buffer to store the read data.
+        nbyte: The number of bytes to read.
+    Returns: The number of bytes read or -1 in case of failure.
+    """
+    return external_call["read", Int, c_int, UnsafePointer[c_void], UInt](fildes, buf, nbyte)
+
+
+### Monitoring file descriptors ###
+@value
+@register_passable("trivial")
+struct epoll_data:
+    var ptr: UnsafePointer[c_void]
+    var fd: c_int
+    var u32: UInt32
+    var u64: UInt64
+
+    fn __init__(out self, fd: c_int):
+        self.ptr = UnsafePointer[c_void]()
+        self.fd = fd
+        self.u32 = 0
+        self.u64 = 0
+
+
+@value
+@register_passable("trivial")
+struct epoll_event:
+    var events: UInt32
+    """Epoll events."""
+    var data: epoll_data
+    """User data variable."""
+
+
+# EPOLL op values
+alias EPOLL_CTL_ADD = 1
+alias EPOLL_CTL_DEL = 2
+alias EPOLL_CTL_MOD = 3
+
+# EPOLL op values
+alias EPOLLIN = 1
+alias EPOLLOUT = 4
+alias EPOLLRDHUP = 8192
+alias EPOLLPRI = 2
+alias EPOLLERR = 8
+alias EPOLLHUP = 16
+alias EPOLLET = 0x80000000
+alias EPOLLONESHOT = 0x40000000
+alias EPOLLEXCLUSIVE = 0x10000000
+
+
+fn epoll_create(size: c_int) -> c_int:
+    return external_call["epoll_create", c_int, c_int](size)
+
+
+fn epoll_create1(flags: c_int) -> c_int:
+    return external_call["epoll_create1", c_int, c_int](flags)
+
+
+fn epoll_ctl(epfd: c_int, op: c_int, fd: c_int, event: UnsafePointer[epoll_event]) -> c_int:
+    return external_call["epoll_ctl", c_int, c_int, c_int, c_int, UnsafePointer[epoll_event]](epfd, op, fd, event)
+
+
+fn epoll_wait(epfd: c_int, events: UnsafePointer[epoll_event], maxevents: c_int, timeout: c_int) -> c_int:
+    return external_call["epoll_wait", c_int, c_int, UnsafePointer[epoll_event], c_int, c_int](
+        epfd, events, maxevents, timeout
+    )
+
+
+# fn epoll_pwait(epfd: c_int, events: UnsafePointer[epoll_event], maxevents: c_int, timeout: c_int, sigmask: UnsafePointer[sigset_t]) -> c_int:
+#     return external_call["epoll_pwait", c_int, c_int, UnsafePointer[epoll_event], c_int, c_int, UnsafePointer[sigset_t]](epfd, events, maxevents, timeout, sigmask)
+
+
+# fn epoll_pwait2(epfd: c_int, events: UnsafePointer[epoll_event], maxevents: c_int, timeout: UnsafePointer[_CTimeSpec], sigmask: UnsafePointer[sigset_t]) -> c_int:
+#     return external_call["epoll_pwait", c_int, c_int, UnsafePointer[epoll_event], c_int, c_int, UnsafePointer[sigset_t]](epfd, events, maxevents, timeout, sigmask)

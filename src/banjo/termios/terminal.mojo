@@ -12,15 +12,16 @@ fn tcgetattr(file_descriptor: c.c_int) raises -> c.Termios:
         Termios struct.
     """
     var termios_p = c.Termios()
-    var status = c.tcgetattr(file_descriptor, Reference(termios_p))
+    var status = c.tcgetattr(file_descriptor, Pointer.address_of(termios_p))
     if status != 0:
         raise Error("Failed c.tcgetattr. Status: " + str(status))
 
     return termios_p
 
 
-fn tcsetattr(file_descriptor: c.c_int, optional_actions: c.c_int, inout termios_p: c.Termios) raises -> None:
-    """Set the tty attributes for file descriptor file_descriptor from the attributes, which is a list like the one returned by c.tcgetattr(). The when argument determines when the attributes are changed:
+fn tcsetattr(file_descriptor: c.c_int, optional_actions: c.c_int, mut termios_p: c.Termios) raises -> None:
+    """Set the tty attributes for file descriptor file_descriptor from the attributes,
+    which is a list like the one returned by c.tcgetattr(). The when argument determines when the attributes are changed:
     This is a wrapper around `c.tcsetattr()`.
 
     `termios.TCSANOW`
@@ -37,13 +38,14 @@ fn tcsetattr(file_descriptor: c.c_int, optional_actions: c.c_int, inout termios_
         optional_actions: When to change the attributes.
         termios_p: Pointer to Termios struct.
     """
-    var status = c.tcsetattr(file_descriptor, optional_actions, Reference(termios_p))
+    var status = c.tcsetattr(file_descriptor, optional_actions, Pointer.address_of(termios_p))
     if status != 0:
         raise Error("Failed c.tcsetattr. Status: " + str(status))
 
 
 fn tcsendbreak(file_descriptor: c.c_int, duration: c.c_int) raises -> None:
-    """Send a break on file descriptor `file_descriptor`. A zero duration sends a break for 0.25 - 0.5 seconds; a nonzero duration has a system dependent meaning.
+    """Send a break on file descriptor `file_descriptor`.
+    A zero duration sends a break for 0.25 - 0.5 seconds; a nonzero duration has a system dependent meaning.
 
     Args:
         file_descriptor: File descriptor.

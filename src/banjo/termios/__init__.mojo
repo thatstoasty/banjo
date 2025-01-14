@@ -51,4 +51,5 @@ from .c import (
     TCOON,
     TCOFLUSH,
     TCIOFLUSH,
+    read,
 )
