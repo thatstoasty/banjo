@@ -12,7 +12,7 @@ repos:
         entry: magic run mojo format -l 120
         language: system
         files: '\.(mojo|🔥)$'
-        stages: [commit]
+        stages: [pre-commit]
       # - id: mojo-docs
       #   name: mojo-docs
       #   entry: python3 ./scripts/check-docstrings.py
