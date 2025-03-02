@@ -219,7 +219,7 @@ alias EVENT_WRITE = (1 << 1)
 # #         )
 
 
-fn stdin_select(timeout: Optional[Int] = None) -> List[StaticTuple[Int, 2]]:
+fn stdin_select(timeout: Optional[Int] = None) -> StaticTuple[Int, 2]:
     """Perform the actual selection, until some monitored file objects are
     ready or a timeout expires.
 
@@ -235,7 +235,7 @@ fn stdin_select(timeout: Optional[Int] = None) -> List[StaticTuple[Int, 2]]:
         `events` is a bitwise mask of `EVENT_READ`|`EVENT_WRITE`.
     """
     var readers = fd_set()
-    readers.set(int(STDIN))
+    readers.set(STDIN)
 
     var tv = timeval(0, 0)
     if timeout:

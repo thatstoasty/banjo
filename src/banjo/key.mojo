@@ -1,5 +1,6 @@
 from collections import Dict
-from .termios import read, STDIN
+from memory import stack_allocation, UnsafePointer
+from banjo.termios import read, STDIN
 
 
 @value
@@ -7,33 +8,6 @@ struct KeyMsg:
     """Contains information about a keypress. KeyMsgs are always sent to
     the program's update function. There are a couple general patterns you could
     use to check for keypresses.
-
-    ```go
-    # Switch on the string representation of the key (shorter)
-    switch msg := msg.(type) {
-    case KeyMsg:
-        switch msg.String() {
-        case "enter":
-        print("you pressed enter!")
-                case "a":
-        print("you pressed a!")
-                }
-    }
-
-    # Switch on the key type (more foolproof)
-    switch msg := msg.(type) {
-    case KeyMsg:
-        switch msg.Type {
-        case KeyEnter:
-            print("you pressed enter!")
-                    case KeyRunes:
-            switch string(msg.Runes) {
-            case "a":
-                print("you pressed a!")
-            }
-        }
-    }
-    ```
 
     Note that `Key.text` will always contain at least one character, so you can
     always safely call `Key.text[0]`. In most cases `Key.text` will only contain
@@ -48,7 +22,7 @@ struct KeyMsg:
 struct KeyType(CollectionElement, Stringable, KeyElement):
     """Indicates the key pressed, such as `KeyEnter` or `KeyBreak` or `KeyCtrlC`.
     All other keys will be type `KeyRunes`. To get the rune value, check the Rune
-    method on a `Key` struct, or use the `str(Key)` method.
+    method on a `Key` struct, or use the `String(Key)` method.
 
     ```mojo
     from banjo.key import Key, KeyType
@@ -58,7 +32,7 @@ struct KeyType(CollectionElement, Stringable, KeyElement):
         print(k.text)
         # Output: a
 
-        print(str(k))
+        print(String(k))
         # Output: alt+a
     ```
     """
@@ -285,16 +259,16 @@ struct Key(CollectionElement, Stringable):
                 builder.write("]")
             return builder
         else:
-            builder.write(str(self.type))
+            builder.write(String(self.type))
             return builder
 
 
 fn read_events() -> Key:
-    var buffer = List[UInt8](capacity=10)
+    var buffer = List[Byte](capacity=10)
     var bytes_read = read(STDIN, buffer.unsafe_ptr(), 10)
-    buffer.size += int(bytes_read)
+    buffer.size += Int(bytes_read)
     buffer.append(0)
-    return Key(KeyType.KeyRunes, text=String(buffer^))
+    return Key(KeyType.KeyRunes, text=String(buffer=buffer^))
 
 
 # Control keys. We could do this with an iota, but the values are very

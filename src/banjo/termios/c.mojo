@@ -149,20 +149,7 @@ alias VTIME = 17
 alias CS8 = 768
 
 
-# TTY when values.
-alias TCSADRAIN = 1
-alias TCSAFLUSH = 2
-alias TCSANOW = 0
-alias TCSASOFT = 16
-
-
-# TTY flow actions.
-alias TCOOFF = 1
-alias TCOON = 2
-alias TCOFLUSH = 2
-alias TCIOFLUSH = 3
-
-
+@value
 @register_passable("trivial")
 struct Termios(Movable, Stringable, Writable):
     """Termios libc."""
@@ -203,27 +190,29 @@ struct Termios(Movable, Stringable, Writable):
         writer.write(
             "Termios(",
             "c_iflag=",
-            str(self.c_iflag),
+            self.c_iflag,
             ", ",
             "c_oflag=",
-            str(self.c_oflag),
+            self.c_oflag,
             ", ",
             "c_cflag=",
-            str(self.c_cflag),
+            self.c_cflag,
             ", ",
             "c_lflag=",
-            str(self.c_lflag),
+            self.c_lflag,
             ", ",
             "c_ispeed=",
-            str(self.c_ispeed),
+            self.c_ispeed,
             ", ",
             "c_ospeed=",
-            str(self.c_ospeed),
+            self.c_ospeed,
             ", ",
             "c_cc=(",
         )
+
+        @parameter
         for i in range(20):
-            writer.write(str(self.c_cc[i]), ", ")
+            writer.write(self.c_cc[i], ", ")
         writer.write(")")
 
     fn __str__(self) -> String:

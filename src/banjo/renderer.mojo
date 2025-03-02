@@ -1,5 +1,4 @@
 from time import sleep
-from gojo.fmt import sprintf
 from mist.screen import clear_screen, move_cursor
 
 
@@ -12,9 +11,6 @@ struct Renderer:
         self.framerate = 1.0 / fps
 
     fn write(self, input: String):
-        try:
-            clear_screen()
-            move_cursor(1, 1)
-        except:
-            pass
+        clear_screen()
+        move_cursor(1, 1)
         print(input, end="")

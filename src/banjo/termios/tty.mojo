@@ -1,5 +1,5 @@
-import .c
-from .terminal import tcgetattr, tcsetattr
+import banjo.termios.c
+from banjo.termios.terminal import tcgetattr, tcsetattr
 
 # Indices for Termios list.
 alias IFLAG = 0
@@ -9,6 +9,51 @@ alias LFLAG = 3
 alias ISPEED = 4
 alias OSPEED = 5
 alias CC = 6
+
+
+# TTY when values.
+@value
+@register_passable("trivial")
+struct WhenOption:
+    """TTY when values."""
+
+    var value: Int
+    alias TCSANOW = Self(0)
+    alias TCSADRAIN = Self(1)
+    alias TCSAFLUSH = Self(2)
+    alias TCSASOFT = Self(16)
+
+
+# TTY flow actions.
+@value
+@register_passable("trivial")
+struct FlowOption:
+    """TTY flow values."""
+
+    var value: Int
+    alias TCOOFF = Self(1)
+    """restarts suspends output."""
+    alias TCOON = Self(2)
+    """transmits a STOP character, which stops the terminal device from transmitting data to the system."""
+    alias TCOFLUSH = Self(2)
+    """transmits a START character, which starts the terminal device transmitting data to the system."""
+    alias TCIOFLUSH = Self(3)
+    """flushes both data received but not read, and data written but not transmitted."""
+
+
+# TTY flow actions.
+@value
+@register_passable("trivial")
+struct FlushOption:
+    """TTY flow values."""
+
+    var value: Int
+    alias TCIFLUSH = Self(0)
+    """flushes data received but not read."""
+    alias TCOFLUSH = Self(1)
+    """flushes data written but not transmitted."""
+    alias TCIOFLUSH = Self(2)
+    """flushes both data received but not read, and data written but not transmitted."""
 
 
 fn cfmakeraw(mut mode: c.Termios):
@@ -81,7 +126,7 @@ fn cfmakecbreak(mut mode: c.Termios):
     mode.c_cc[c.VTIME] = 0
 
 
-fn set_raw(file_descriptor: c.c_int, when: Int = c.TCSAFLUSH) raises -> c.Termios:
+fn set_raw(file_descriptor: c.c_int, when: WhenOption = WhenOption.TCSAFLUSH) raises -> c.Termios:
     """Set terminal to raw mode.
 
     Args:
@@ -92,14 +137,14 @@ fn set_raw(file_descriptor: c.c_int, when: Int = c.TCSAFLUSH) raises -> c.Termio
         The original terminal attributes, and an error if any.
     """
     var mode = tcgetattr(file_descriptor)
-    var new = mode
+    var new = mode.copy()
     cfmakeraw(new)
     tcsetattr(file_descriptor, when, new)
 
     return mode
 
 
-fn set_cbreak(file_descriptor: c.c_int, when: Int = c.TCSAFLUSH) raises -> c.Termios:
+fn set_cbreak(file_descriptor: c.c_int, when: WhenOption = WhenOption.TCSAFLUSH) raises -> c.Termios:
     """Set terminal to cbreak mode.
 
     Args:
@@ -110,7 +155,7 @@ fn set_cbreak(file_descriptor: c.c_int, when: Int = c.TCSAFLUSH) raises -> c.Ter
         The original terminal attributes, and an error if any.
     """
     var mode = tcgetattr(file_descriptor)
-    var new = mode
+    var new = mode.copy()
     cfmakecbreak(new)
     tcsetattr(file_descriptor, when, new)
 
