@@ -219,7 +219,7 @@ alias EVENT_WRITE = (1 << 1)
 # #         )
 
 
-fn stdin_select(timeout: Optional[Int] = None) -> StaticTuple[Int, 2]:
+fn stdin_select(timeout: Optional[Int] = None) -> Int:
     """Perform the actual selection, until some monitored file objects are
     ready or a timeout expires.
 
@@ -251,15 +251,15 @@ fn stdin_select(timeout: Optional[Int] = None) -> StaticTuple[Int, 2]:
         )
         == -1
     ):
-        _ = external_call["perror", c_void, UnsafePointer[UInt8]](String("select").unsafe_ptr())
+        _ = external_call["perror", c_void, UnsafePointer[UInt8]]("select".unsafe_ptr())
         exit(1)
 
     if readers.is_set(0):
         var events = 0
         events |= EVENT_READ
-        return StaticTuple[Int, 2](0, events)
+        return events
 
-    return StaticTuple[Int, 2]()
+    return 0
 
 
 struct SelectSelector(Movable):

@@ -2,13 +2,12 @@ from utils import Variant
 from time import sleep
 from collections import Optional, Dict
 from runtime.asyncrt import TaskGroup
-import mog
-from mog import Position
 from banjo.termios import Termios, tcgetattr, tcsetattr, set_cbreak, WhenOption, STDIN
 from banjo.tty import TTY, Mode
 from banjo.renderer import Renderer
 from banjo.select import SelectSelector, EVENT_READ, stdin_select
 from banjo.key import Key, KeyType, read_events, KeyMsg
+from banjo.msg import Msg, ExitMsg
 
 
 alias CmdFn = fn () -> Msg
@@ -30,28 +29,6 @@ trait Model(CollectionElement):
         ...
 
 
-trait IsMsg(CollectionElement):
-    ...
-
-
-# @value
-# struct Msg():
-#     var type: String
-#     var value: String
-
-
-@value
-struct ExitMsg(IsMsg):
-    pass
-
-
-fn exit_msg() -> Msg:
-    return ExitMsg()
-
-
-alias Msg = Variant[ExitMsg, KeyMsg, NoneType]
-
-
 async fn view(tui: TUI):
     while True:
         if tui.done:
@@ -62,15 +39,11 @@ async fn view(tui: TUI):
 
 async fn update(mut tui: TUI):
     while True:
-        var ready = stdin_select()
-
-        if not ready[1] & EVENT_READ:
+        if not stdin_select() & EVENT_READ:
             continue
 
         # TODO: This feels janky. I want to continue the while loop if there are no events to read.
-        var key_msg = KeyMsg(read_events())
-
-        tui.msgs.append(key_msg)
+        tui.msgs.append(read_events())
         for msg in tui.msgs:
             cmd = tui.model.update(msg[])
             if cmd:
@@ -109,5 +82,3 @@ struct TUI[T: Model]:
             tg.create_task(view(self))
             tg.create_task(update(self))
             tg.wait()
-
-        print("done")

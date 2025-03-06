@@ -1,5 +1,6 @@
 import banjo
-from banjo.program import TUI, Model, Cmd, Msg, ExitMsg, KeyMsg, exit_msg
+from banjo.program import TUI, Model, Cmd, Msg, ExitMsg, KeyMsg
+from banjo.msg import exit_msg
 import mog
 from mog import Position
 
@@ -23,8 +24,7 @@ struct BaseModel(Model):
             self.iterations += 1
             return
         elif msg.isa[KeyMsg]():
-            self.last_key = String(msg[KeyMsg].key)
-
+            self.last_key = String(msg[KeyMsg])
             if self.last_key == "q":
                 return Cmd(exit_msg)
             elif self.last_key == "up":
@@ -39,9 +39,7 @@ struct BaseModel(Model):
             return
 
     fn view(self) -> String:
-        alias left = mog.Style(mog.ASCII).border(mog.ROUNDED_BORDER).padding_left(1).padding_right(1).width(20).height(
-            5
-        )
+        alias left = mog.Style(mog.ASCII).border(mog.ROUNDED_BORDER).padding(0, 1).width(20).height(5)
         alias right = left.alignment(Position.CENTER, Position.CENTER)
         var cursor_a: String = "> " if self.index == 0 else "  "
         var cursor_b: String = "> " if self.index == 1 else "  "
