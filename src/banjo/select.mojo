@@ -288,7 +288,7 @@ struct SelectSelector(Movable):
             ValueError if events is invalid
         """
         if (not events) or (events & ~(EVENT_READ | EVENT_WRITE)):
-            raise Error("ValueError: Invalid events: " + str(events))
+            raise Error("ValueError: Invalid events: ", String(events))
 
         if events & EVENT_READ:
             self.readers.add(fd)

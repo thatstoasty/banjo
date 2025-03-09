@@ -3,6 +3,7 @@ from collections.string import StringSlice
 from memory import UnsafePointer, Span
 from banjo.termios import read, STDIN
 from banjo.msg import Msg, FocusMsg, BlurMsg, UnknownInputByteMsg, NoMsg
+from sys.ffi import os_is_windows
 
 
 @value
@@ -28,6 +29,18 @@ struct KeyMsg(CollectionElement, ExplicitlyCopyable, Stringable, Writable):
 
     fn __str__(self) -> String:
         return String.write(self)
+
+    fn __eq__(self, other: Self) -> Bool:
+        return self.key == other.key
+
+    fn __eq__(self, type: KeyType) -> Bool:
+        return self.key.type == type
+
+    fn __ne__(self, other: Self) -> Bool:
+        return self.key != other.key
+
+    fn __ne__(self, type: KeyType) -> Bool:
+        return self.key.type != type
 
 
 @value
@@ -121,7 +134,7 @@ struct KeyType(CollectionElement, Stringable, KeyElement):
     # Control key aliases.
     alias Null: KeyType = Self.NUL
     alias Break: KeyType = Self.ETX
-    alias Enter: KeyType = Self.CR
+    alias Enter: KeyType = Self.CR if os_is_windows() else Self.LF
     alias Backspace: KeyType = Self.DEL
     alias Tab: KeyType = Self.HT
     alias Esc: KeyType = Self.ESC
@@ -258,6 +271,14 @@ struct Key(CollectionElement, ExplicitlyCopyable, Stringable, Writable):
         self.text = text
         self.alt = alt
         self.paste = paste
+
+    fn __eq__(self, other: Self) -> Bool:
+        return (
+            self.type == other.type and self.text == other.text and self.alt == other.alt and self.paste == other.paste
+        )
+
+    fn __ne__(self, other: Self) -> Bool:
+        return self.type != other.type or self.text != other.text or self.alt != other.alt or self.paste != other.paste
 
     fn write_to[W: Writer, //](self, mut writer: W):
         """Formats the string representation of this type to the provided formatter.
