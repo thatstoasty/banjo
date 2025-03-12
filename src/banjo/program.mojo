@@ -7,7 +7,7 @@ from banjo.tty import TTY, Mode
 from banjo.renderer import Renderer
 from banjo.select import SelectSelector, EVENT_READ, stdin_select
 from banjo.key import Key, KeyType, read_events, KeyMsg
-from banjo.msg import Msg, ExitMsg
+from banjo.msg import Msg, ExitMsg, NoMsg
 
 
 alias CmdFn = fn () -> Msg
@@ -37,21 +37,43 @@ async fn view(tui: TUI):
         sleep(tui.renderer.framerate)
 
 
-async fn update(mut tui: TUI):
-    while True:
-        if not stdin_select() & EVENT_READ:
-            continue
+fn handle_msg(mut tui: TUI, msg: Msg) -> None:
+    var cmd = tui.model.update(msg)
+    if cmd:
+        var msg = cmd.value()()
+        handle_msg(tui, msg)
+    return
 
-        # TODO: This feels janky. I want to continue the while loop if there are no events to read.
-        tui.msgs.append(read_events())
-        for msg in tui.msgs:
-            cmd = tui.model.update(msg[])
-            if cmd:
-                var msg = cmd.value()()
-                if msg.isa[ExitMsg]():
-                    tui.done = True
-                    return
-                tui.msgs.append(msg)
+
+async fn update(mut tui: TUI):
+    while not tui.done:
+        try:
+            if not stdin_select() & EVENT_READ:
+                continue
+        except e:
+            print("Error selecting stdin.", e, file=2)
+
+        if cmd := tui.model.update(read_events()):
+            var msg = cmd.value()()
+            if msg.isa[ExitMsg]():
+                tui.done = True
+                return
+
+            if not msg.isa[NoMsg]():
+                handle_msg(tui, msg)
+            # if msg.isa[ExitMsg]():
+            #     tui.done = True
+            #     return
+
+        # tui.msgs.append(read_events())
+        # for msg in tui.msgs:
+        #     cmd = tui.model.update(msg[])
+        #     if cmd:
+        #         var msg = cmd.value()()
+        #         if msg.isa[ExitMsg]():
+        #             tui.done = True
+        #             return
+        #         tui.msgs.append(msg)
 
 
 struct TUI[T: Model]:
@@ -59,7 +81,7 @@ struct TUI[T: Model]:
     var renderer: Renderer
     var running: Bool
     var fps: Float64
-    var msgs: List[Msg]
+    # var msgs: List[Msg]
     var done: Bool
 
     fn __init__(
@@ -73,7 +95,7 @@ struct TUI[T: Model]:
         self.fps = fps
         self.renderer = renderer
         self.running = running
-        self.msgs = List[Msg]()
+        # self.msgs = List[Msg]()
         self.done = False
 
     fn run(mut self) raises:

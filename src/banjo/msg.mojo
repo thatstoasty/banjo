@@ -48,8 +48,16 @@ struct NoMsg:
 
 
 @value
+struct GeneralMsg:
+    var value: String
+
+    fn write_to[W: Writer, //](self, mut writer: W) -> None:
+        writer.write("GeneralMsg(value=", self.value, ")")
+
+
+@value
 struct Msg:
-    alias _type = Variant[ExitMsg, KeyMsg, FocusMsg, BlurMsg, UnknownInputByteMsg, NoMsg]
+    alias _type = Variant[ExitMsg, KeyMsg, FocusMsg, BlurMsg, UnknownInputByteMsg, GeneralMsg, NoMsg]
     var value: Self._type
 
     @implicit

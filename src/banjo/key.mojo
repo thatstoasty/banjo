@@ -1,6 +1,6 @@
 from collections import Dict, Optional
 from collections.string import StringSlice
-from memory import UnsafePointer, Span
+from memory import Span
 from banjo.termios import read, STDIN
 from banjo.msg import Msg, FocusMsg, BlurMsg, UnknownInputByteMsg, NoMsg
 from sys.ffi import os_is_windows

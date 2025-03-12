@@ -1,10 +1,29 @@
 from utils import StaticTuple
+from collections import InlineArray
 from memory import UnsafePointer
 from .termios.c import c_void, c_int, STDIN
-from sys.ffi import external_call
+from sys.ffi import external_call, os_is_windows, os_is_macos
 from collections import Optional, Set
 from sys import exit
 from time.time import _CTimeSpec
+
+
+fn get_errno() -> c_int:
+    """Get a copy of the current value of the `errno` global variable for
+    the current thread.
+
+    Returns:
+        A copy of the current value of `errno` for the current thread.
+    """
+
+    @parameter
+    if os_is_windows():
+        var errno = InlineArray[c_int, 1]()
+        _ = external_call["_get_errno", c_void](errno.unsafe_ptr())
+        return errno[0]
+    else:
+        alias loc = "__error" if os_is_macos() else "__errno_location"
+        return external_call[loc, UnsafePointer[c_int]]()[]
 
 
 @value
@@ -16,81 +35,111 @@ struct timeval:
 
 @value
 @register_passable("trivial")
-struct fd_set:
-    var fds_bits: StaticTuple[Int64, 16]
+struct FD_SET:
+    var bits: StaticTuple[Int64, 16]
 
     fn __init__(out self):
-        self.fds_bits = StaticTuple[Int64, 16]()
+        self.bits = StaticTuple[Int64, 16]()
+
+        @parameter
         for i in range(16):
-            self.fds_bits[i] = 0
+            self.bits[i] = 0
 
     fn set(mut self, fd: Int):
-        var word = fd // 64
-        var bit = fd % 64
-        self.fds_bits[word] |= 1 << bit
-
-    fn clear(mut self, fd: Int):
-        var word = fd // 64
-        var bit = fd % 64
-        self.fds_bits[word] &= ~(1 << bit)
+        self.bits[fd // 64] |= 1 << fd % 64
 
     fn is_set(self, fd: Int) -> Bool:
-        var word = fd // 64
-        var bit = fd % 64
-        var result = (self.fds_bits[word] & (1 << bit)) != 0
-        return result
-
-    fn clear_all(mut self):
-        for i in range(16):
-            self.fds_bits[i] = 0
-
-    fn print_bits(self):
-        for i in range(16):
-            print("Word", i, ":", bin(self.fds_bits[i]))
+        return (self.bits[fd // 64] & (1 << fd % 64)) != 0
 
 
-fn FD_ZERO(set: UnsafePointer[fd_set]) -> c_void:
+fn FD_ZERO[origin: MutableOrigin](set: Pointer[FD_SET, origin]) -> c_void:
     """Libc POSIX `FD_ZERO` function
     Reference: https://man7.org/linux/man-pages/man2/select.2.html
-    Fn signature: void FD_ZERO(fd_set *set).
+    Fn signature: void FD_ZERO(FD_SET *set).
 
     Args:
-        set: A UnsafePointer to the set of file descriptors to clear.
+        set: A pointer to the set of file descriptors to clear.
     """
-    return external_call["FD_ZERO", c_void, UnsafePointer[fd_set]](set)
+    return external_call["FD_ZERO", c_void, Pointer[FD_SET, origin]](set)
 
 
-fn select(
+fn _select(
     nfds: c_int,
-    readfds: UnsafePointer[fd_set],
-    writefds: UnsafePointer[fd_set],
-    exceptfds: UnsafePointer[fd_set],
-    timeout: UnsafePointer[timeval],
+    readfds: Pointer[FD_SET],
+    writefds: Pointer[FD_SET],
+    exceptfds: Pointer[FD_SET],
+    timeout: Pointer[timeval],
 ) -> c_int:
     """Libc POSIX `select` function
-    Reference: https://man7.org/linux
-    Fn signature: int select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struct timeval *timeout).
+    Reference: https://man7.org/linux/man-pages/man2/select.2.html
+    Fn signature: int select(int nfds, FD_SET *readfds, FD_SET *writefds, FD_SET *exceptfds, struct timeval *timeout).
 
     Args: nfds: The highest-numbered file descriptor in any of the three sets, plus 1.
-        readfds: A UnsafePointer to the set of file descriptors to read from.
-        writefds: A UnsafePointer to the set of file descriptors to write to.
-        exceptfds: A UnsafePointer to the set of file descriptors to check for exceptions.
-        timeout: A UnsafePointer to a timeval struct to set a timeout.
+        readfds: A pointer to the set of file descriptors to read from.
+        writefds: A pointer to the set of file descriptors to write to.
+        exceptfds: A pointer to the set of file descriptors to check for exceptions.
+        timeout: A pointer to a timeval struct to set a timeout.
     Returns: The number of file descriptors in the sets or -1 in case of failure.
     """
     return external_call[
         "select",
         c_int,  # FnName, RetType
-        c_int,
-        UnsafePointer[fd_set],
-        UnsafePointer[fd_set],
-        UnsafePointer[fd_set],
-        UnsafePointer[timeval],  # Args
     ](nfds, readfds, writefds, exceptfds, timeout)
 
 
-alias EVENT_READ = (1 << 0)
-alias EVENT_WRITE = (1 << 1)
+fn select(
+    highest_fd: c_int,
+    read_fds: FD_SET,
+    write_fds: FD_SET,
+    except_fds: FD_SET,
+    timeout: timeval,
+) raises -> UInt:
+    """Libc POSIX `select` function.
+
+    Args:
+        nfds: The highest-numbered file descriptor in any of the three sets, plus 1.
+        read_fds: A pointer to the set of file descriptors to read from.
+        write_fds: A pointer to the set of file descriptors to write to.
+        except_fds: A pointer to the set of file descriptors to check for exceptions.
+        timeout: A pointer to a timeval struct to set a timeout.
+
+    Returns:
+        The number of file descriptors in the sets.
+
+    #### C Function Signature:
+    ```c
+    int select(int nfds, FD_SET *readfds, FD_SET *writefds, FD_SET *exceptfds, struct timeval *timeout);
+    ```
+
+    #### Reference
+    https://man7.org/linux/man-pages/man2/select.2.html
+    """
+    var result = _select(
+        highest_fd,
+        Pointer.address_of(read_fds),
+        Pointer.address_of(write_fds),
+        Pointer.address_of(except_fds),
+        Pointer.address_of(timeout),
+    )
+
+    if result == -1:
+        var errno = get_errno()
+        if errno == EBADF:
+            raise Error("EBADF: An invalid file descriptor was given in one of the sets.")
+        elif errno == EINTR:
+            raise Error("EINTR: A signal was caught.")
+        elif errno == EINVAL:
+            raise Error("EINVAL: nfds is negative or exceeds the RLIMIT_NOFILE resource limit.")
+        elif errno == ENOMEM:
+            raise Error("ENOMEM: Unable to allocate memory for internal tables.")
+        else:
+            raise Error("Unknown error occurred.")
+
+    return UInt(Int(result))
+
+
+alias EVENT_READ = 1
+alias EVENT_WRITE = 2
 
 
 # trait Selector():
@@ -219,7 +268,7 @@ alias EVENT_WRITE = (1 << 1)
 # #         )
 
 
-fn stdin_select(timeout: Optional[Int] = None) -> Int:
+fn stdin_select(timeout: Optional[Int] = None) raises -> Int:
     """Perform the actual selection, until some monitored file objects are
     ready or a timeout expires.
 
@@ -234,7 +283,7 @@ fn stdin_select(timeout: Optional[Int] = None) -> Int:
         List of (key, events) for ready file objects
         `events` is a bitwise mask of `EVENT_READ`|`EVENT_WRITE`.
     """
-    var readers = fd_set()
+    var readers = FD_SET()
     readers.set(STDIN)
 
     var tv = timeval(0, 0)
@@ -244,15 +293,14 @@ fn stdin_select(timeout: Optional[Int] = None) -> Int:
     if (
         select(
             STDIN + 1,
-            UnsafePointer.address_of(readers),
-            UnsafePointer[fd_set](),
-            UnsafePointer[fd_set](),
-            UnsafePointer.address_of(tv),
+            readers,
+            FD_SET(),
+            FD_SET(),
+            tv,
         )
-        == -1
+        == 0
     ):
-        _ = external_call["perror", c_void, UnsafePointer[UInt8]]("select".unsafe_ptr())
-        exit(1)
+        return 0
 
     if readers.is_set(0):
         var events = 0
@@ -314,7 +362,7 @@ struct SelectSelector(Movable):
         self.readers.remove(fd)
         self.writers.remove(fd)
 
-    fn select(mut self, timeout: Optional[Int] = None) -> List[StaticTuple[Int, 2]]:
+    fn select(mut self, timeout: Optional[Int] = None) raises -> List[StaticTuple[Int, 2]]:
         """Perform the actual selection, until some monitored file objects are
         ready or a timeout expires.
 
@@ -329,11 +377,11 @@ struct SelectSelector(Movable):
             List of (key, events) for ready file objects
             `events` is a bitwise mask of `EVENT_READ`|`EVENT_WRITE`.
         """
-        var readers = fd_set()
+        var readers = FD_SET()
         for fd in self.readers:
             readers.set(fd[])
 
-        var writers = fd_set()
+        var writers = FD_SET()
         for fd in self.writers:
             writers.set(fd[])
 
@@ -341,19 +389,13 @@ struct SelectSelector(Movable):
         if timeout:
             tv.tv_sec = Int64(timeout.value())
 
-        if (
-            select(
-                self._highest_fd + 1,
-                UnsafePointer.address_of(readers),
-                UnsafePointer.address_of(writers),
-                UnsafePointer[fd_set](),
-                UnsafePointer.address_of(tv),
-            )
-            == -1
-        ):
-            _ = external_call["perror", c_void, UnsafePointer[UInt8]](String("select").unsafe_ptr())
-            print("select failed")
-            exit(1)
+        _ = select(
+            self._highest_fd + 1,
+            readers,
+            writers,
+            FD_SET(),
+            tv,
+        )
 
         var ready = List[StaticTuple[Int, 2]]()
         for fd in self.readers:
@@ -528,11 +570,11 @@ struct SelectSelector(Movable):
 #             List of (key, events) for ready file objects
 #             `events` is a bitwise mask of `EVENT_READ`|`EVENT_WRITE`.
 #         """
-#         var readers = fd_set()
+#         var readers = FD_SET()
 #         for fd in self.readers:
 #             readers.set(fd[])
 
-#         var writers = fd_set()
+#         var writers = FD_SET()
 #         for fd in self.writers:
 #             writers.set(fd[])
 
@@ -544,7 +586,7 @@ struct SelectSelector(Movable):
 #             self._highest_fd + 1,
 #             UnsafePointer.address_of(readers),
 #             UnsafePointer.address_of(writers),
-#             UnsafePointer[fd_set](),
+#             UnsafePointer[FD_SET](),
 #             UnsafePointer.address_of(tv)
 #         ) == -1:
 #             # _ = external_call["perror", c_void, UnsafePointer[UInt8]](String("select").unsafe_ptr())
@@ -566,3 +608,66 @@ struct SelectSelector(Movable):
 #             ready.append(StaticTuple[Int, 2](fd[], events))
 
 #         return ready
+
+# --- ( error.h Constants )-----------------------------------------------------
+# TODO: These are probably platform specific, we should check the values on each linux and macos.
+alias EPERM = 1
+alias ENOENT = 2
+alias ESRCH = 3
+alias EINTR = 4
+alias EIO = 5
+alias ENXIO = 6
+alias E2BIG = 7
+alias ENOEXEC = 8
+alias EBADF = 9
+alias ECHILD = 10
+alias EAGAIN = 11
+alias ENOMEM = 12
+alias EACCES = 13
+alias EFAULT = 14
+alias ENOTBLK = 15
+alias EBUSY = 16
+alias EEXIST = 17
+alias EXDEV = 18
+alias ENODEV = 19
+alias ENOTDIR = 20
+alias EISDIR = 21
+alias EINVAL = 22
+alias ENFILE = 23
+alias EMFILE = 24
+alias ENOTTY = 25
+alias ETXTBSY = 26
+alias EFBIG = 27
+alias ENOSPC = 28
+alias ESPIPE = 29
+alias EROFS = 30
+alias EMLINK = 31
+alias EPIPE = 32
+alias EDOM = 33
+alias ERANGE = 34
+alias EWOULDBLOCK = EAGAIN
+alias EINPROGRESS = 36 if os_is_macos() else 115
+alias EALREADY = 37 if os_is_macos() else 114
+alias ENOTSOCK = 38 if os_is_macos() else 88
+alias EDESTADDRREQ = 39 if os_is_macos() else 89
+alias EMSGSIZE = 40 if os_is_macos() else 90
+alias ENOPROTOOPT = 42 if os_is_macos() else 92
+alias EAFNOSUPPORT = 47 if os_is_macos() else 97
+alias EADDRINUSE = 48 if os_is_macos() else 98
+alias EADDRNOTAVAIL = 49 if os_is_macos() else 99
+alias ENETDOWN = 50 if os_is_macos() else 100
+alias ENETUNREACH = 51 if os_is_macos() else 101
+alias ECONNABORTED = 53 if os_is_macos() else 103
+alias ECONNRESET = 54 if os_is_macos() else 104
+alias ENOBUFS = 55 if os_is_macos() else 105
+alias EISCONN = 56 if os_is_macos() else 106
+alias ENOTCONN = 57 if os_is_macos() else 107
+alias ETIMEDOUT = 60 if os_is_macos() else 110
+alias ECONNREFUSED = 61 if os_is_macos() else 111
+alias ELOOP = 62 if os_is_macos() else 40
+alias ENAMETOOLONG = 63 if os_is_macos() else 36
+alias EHOSTUNREACH = 65 if os_is_macos() else 113
+alias EDQUOT = 69 if os_is_macos() else 122
+alias ENOMSG = 91 if os_is_macos() else 42
+alias EPROTO = 100 if os_is_macos() else 71
+alias EOPNOTSUPP = 102 if os_is_macos() else 95
