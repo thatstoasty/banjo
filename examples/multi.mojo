@@ -113,14 +113,16 @@ struct BaseModel(Model):
         return
 
     fn view(self) -> String:
-        alias border = mog.Style(mog.ASCII).border(mog.ROUNDED_BORDER).padding(0, 1).width(50).height(5).alignment(
-            Position.CENTER, Position.CENTER
-        )
+        alias border = mog.Style(mog.ANSI).border_foreground(mog.Color(5)).border(mog.ROUNDED_BORDER).padding(
+            0, 1
+        ).width(50).height(5).alignment(Position.CENTER, Position.CENTER)
 
         if self.state == State.START:
             return border.render("Press Enter to continue\nor\nQ to quit.")
         elif self.state == State.MENU:
-            alias left = mog.Style(mog.ASCII).border(mog.ROUNDED_BORDER).padding(0, 1).width(20).height(5)
+            alias left = mog.Style(mog.ANSI).border(mog.ROUNDED_BORDER).border_foreground(mog.Color(8)).padding(
+                0, 1
+            ).width(20).height(5)
             alias right = left.alignment(Position.CENTER, Position.CENTER)
             var cursor_a: String = "> " if self.index == 0 else "  "
             var cursor_b: String = "> " if self.index == 1 else "  "
@@ -128,8 +130,9 @@ struct BaseModel(Model):
             var rhs = right.render("Last Key: " + self.last_key)
             return border.render(mog.join_horizontal(Position.CENTER, lhs, rhs))
         elif self.state == State.END:
+            alias option_style = mog.Style(mog.ANSI).foreground(mog.Color(2))
             var option = "Option A" if self.index == 0 else "Option B"
-            return border.render("You selected", option, "\nPress Q to quit.")
+            return border.render("You selected", option_style.render(option), "\nPress Q to quit.")
 
         return "Somehow reached an invalid state, please exit the program."
 
