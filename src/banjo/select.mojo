@@ -367,11 +367,11 @@ struct SelectSelector(Movable):
         ready or a timeout expires.
 
         Args:
-            timeout: if timeout > 0, this specifies the maximum wait time, in seconds.
-                    if timeout <= 0, the select() call won't block, and will
-                    report the currently ready file objects
-                    if timeout is None, select() will block until a monitored
-                    file object becomes ready
+            timeout: If timeout > 0, this specifies the maximum wait time, in seconds.
+                if timeout <= 0, the select() call won't block, and will
+                report the currently ready file objects
+                if timeout is None, select() will block until a monitored
+                file object becomes ready.
 
         Returns:
             List of (key, events) for ready file objects
@@ -411,7 +411,7 @@ struct SelectSelector(Movable):
                 events |= EVENT_WRITE
             ready.append(StaticTuple[Int, 2](fd[], events))
 
-        return ready
+        return ready^
 
 
 # fn kqueue() -> c_int:
