@@ -1,6 +1,6 @@
-from .terminal import tcgetattr, tcsetattr, tcsendbreak, tcdrain, tcflush, tcflow
-from .tty import cfmakecbreak, cfmakeraw, set_raw, set_cbreak
-from .c import (
+from .termios.terminal import tcgetattr, tcsetattr, tcsendbreak, tcdrain, tcflush, tcflow
+from .termios.tty import cfmakecbreak, cfmakeraw, set_raw, set_cbreak, FlowOption, WhenOption, FlushOption
+from .termios.c import (
     Termios,
     STDIN,
     STDOUT,
@@ -43,12 +43,5 @@ from .c import (
     VSUSP,
     VTIME,
     CS8,
-    TCSADRAIN,
-    TCSAFLUSH,
-    TCSANOW,
-    TCSASOFT,
-    TCOOFF,
-    TCOON,
-    TCOFLUSH,
-    TCIOFLUSH,
 )
+from .program import TUI

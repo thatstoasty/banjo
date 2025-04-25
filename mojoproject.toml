@@ -1,10 +1,10 @@
 [project]
 authors = ["Mikhail Tavarez <miktavarez@gmail.com>"]
-channels = ["conda-forge", "https://conda.modular.com/max"]
+channels = ["https://repo.prefix.dev/mojo-community", "conda-forge", "https://conda.modular.com/max"]
 description = "Mojo Termios via libc bindings."
-name = "termios"
-platforms = ["osx-arm64"]
-version = "0.1.1"
+name = "banjo"
+platforms = ["linux-64", "osx-arm64"]
+version = "25.2.0"
 license = "MIT"
 license-file = "LICENSE"
 homepage = "https://github.com/thatstoasty/termios"
@@ -15,18 +15,10 @@ tests = "python scripts/util.py run tests"
 benchmarks = "python scripts/util.py run benchmarks"
 examples = "python scripts/util.py run examples"
 template = "python scripts/util.py templater"
-build = { cmd = "python scripts/util.py build", env = {MODULAR_MOJO_IMPORT_PATH = "$CONDA_PREFIX/lib/mojo"} }
+build = { cmd = "python scripts/util.py build", env = { MODULAR_MOJO_IMPORT_PATH = "$CONDA_PREFIX/lib/mojo" } }
 publish = { cmd = "python scripts/util.py publish", env = { PREFIX_API_KEY = "$PREFIX_API_KEY" } }
-bp = { depends_on=["build", "publish"] }
+bp = { depends-on=["build", "publish"] }
 
 [dependencies]
-max = ">=24.5.0,<25"
-
-[feature.nightly]
-channels = ["conda-forge", "https://conda.modular.com/max-nightly"]
-
-[feature.nightly.dependencies]
-max = ">=24.6.0.dev2024092405"
-
-[environments]
-nightly = ["nightly"]
+max = ">=25.2.0,<25.3.0"
+mog = ">=25.2.0,<25.3.0"
