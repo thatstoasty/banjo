@@ -97,7 +97,7 @@ fn select(
     """Libc POSIX `select` function.
 
     Args:
-        nfds: The highest-numbered file descriptor in any of the three sets, plus 1.
+        highest_fd: The highest-numbered file descriptor in any of the three sets, plus 1.
         read_fds: A pointer to the set of file descriptors to read from.
         write_fds: A pointer to the set of file descriptors to write to.
         except_fds: A pointer to the set of file descriptors to check for exceptions.
@@ -112,7 +112,7 @@ fn select(
     ```
 
     #### Reference
-    https://man7.org/linux/man-pages/man2/select.2.html
+    https://man7.org/linux/man-pages/man2/select.2.html.
     """
     var result = _select(
         highest_fd,
@@ -273,11 +273,11 @@ fn stdin_select(timeout: Optional[Int] = None) raises -> Int:
     ready or a timeout expires.
 
     Args:
-        timeout: if timeout > 0, this specifies the maximum wait time, in seconds.
+        timeout: If timeout > 0, this specifies the maximum wait time, in seconds.
             if timeout <= 0, the select() call won't block, and will
             report the currently ready file objects
             if timeout is None, select() will block until a monitored
-            file object becomes ready
+            file object becomes ready.
 
     Returns:
         List of (key, events) for ready file objects
@@ -333,7 +333,7 @@ struct SelectSelector(Movable):
             events: Events to monitor (bitwise mask of EVENT_READ|EVENT_WRITE).
 
         Raises:
-            ValueError if events is invalid
+            ValueError if events is invalid.
         """
         if (not events) or (events & ~(EVENT_READ | EVENT_WRITE)):
             raise Error("ValueError: Invalid events: ", String(events))
@@ -357,7 +357,7 @@ struct SelectSelector(Movable):
             KeyError if fileobj is not registered.
 
         Note:
-            If fileobj is registered but has since been closed this does
+            If fileobj is registered but has since been closed this does.
         """
         self.readers.remove(fd)
         self.writers.remove(fd)
