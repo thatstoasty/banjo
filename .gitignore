@@ -174,3 +174,5 @@ output
 
 # Mojo
 *.mojopkg
+
+*.dSYM
