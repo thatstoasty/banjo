@@ -1,6 +1,6 @@
 [project]
 authors = ["Mikhail Tavarez <miktavarez@gmail.com>"]
-channels = ["https://repo.prefix.dev/mojo-community", "conda-forge", "https://conda.modular.com/max-nightly"]
+channels = ["https://repo.prefix.dev/mojo-community", "conda-forge", "https://conda.modular.com/max"]
 description = "Mojo Termios via libc bindings."
 name = "banjo"
 platforms = ["linux-64", "osx-arm64"]
