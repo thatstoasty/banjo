@@ -498,7 +498,7 @@ fn detect_msg(buf: Span[Byte]) -> (Int, Msg):
     # while i < len(buf):
     var remainder = buf[i:]
     var text_start = i
-    for char in StringSlice(unsafe_from_utf8=remainder).chars():
+    for char in StringSlice(unsafe_from_utf8=remainder).codepoints():
         if char.to_u32() <= KeyType.US.value or char.to_u32() == KeyType.DEL.value or char.to_u32() == ord(" "):
             # Rune errors are handled below; control characters and spaces will
             # be handled by detect_sequence in the next call to detectOneMsg.
@@ -552,7 +552,7 @@ fn detect_msg(buf: Span[Byte]) -> (Int, Msg):
 fn read_events() -> Msg:
     var buffer = List[Byte](capacity=256)
     var bytes_read = read(STDIN, buffer.unsafe_ptr(), 256)
-    buffer.size += Int(bytes_read)
+    buffer._len += Int(bytes_read)
     buffer.append(0)
     _, msg = detect_msg(buffer)
     return msg

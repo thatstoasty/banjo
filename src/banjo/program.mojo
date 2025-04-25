@@ -80,19 +80,16 @@ struct TUI[T: Model]:
     var model: T
     var renderer: Renderer
     var running: Bool
-    var fps: Float64
     # var msgs: List[Msg]
     var done: Bool
 
     fn __init__(
         mut self,
         model: T,
-        fps: Float64 = 60,
         renderer: Renderer = Renderer(60),
         running: Bool = True,
     ):
         self.model = model
-        self.fps = fps
         self.renderer = renderer
         self.running = running
         # self.msgs = List[Msg]()

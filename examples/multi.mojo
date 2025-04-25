@@ -2,6 +2,7 @@ import banjo
 from banjo.program import TUI, Model, Cmd
 from banjo.msg import exit_msg, GeneralMsg, Msg, ExitMsg, KeyMsg
 from banjo.key import KeyType
+from banjo.renderer import Renderer
 import mog
 from mog import Position
 
@@ -138,5 +139,5 @@ struct BaseModel(Model):
 
 
 fn main() raises:
-    var program = banjo.TUI(BaseModel())
+    var program = banjo.TUI(BaseModel(), renderer=Renderer(24))
     program.run()
