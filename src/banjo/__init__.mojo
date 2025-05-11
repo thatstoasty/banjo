@@ -1,10 +1,7 @@
-from .termios.terminal import tcgetattr, tcsetattr, tcsendbreak, tcdrain, tcflush, tcflow
-from .termios.tty import cfmakecbreak, cfmakeraw, set_raw, set_cbreak, FlowOption, WhenOption, FlushOption
-from .termios.c import (
+from banjo.termios.terminal import tcgetattr, tcsetattr, tcsendbreak, tcdrain, tcflush, tcflow
+from banjo.termios.tty import cfmakecbreak, cfmakeraw, set_raw, set_cbreak, FlowOption, WhenOption, FlushOption
+from banjo.termios.c import (
     Termios,
-    STDIN,
-    STDOUT,
-    STDERR,
     CREAD,
     CLOCAL,
     PARENB,
@@ -44,4 +41,4 @@ from .termios.c import (
     VTIME,
     CS8,
 )
-from .program import TUI
+from banjo.program import TUI

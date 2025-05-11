@@ -1,38 +1,15 @@
 from utils import StaticTuple
 from memory import Pointer, UnsafePointer
-from sys import external_call, os_is_macos
+from sys import external_call, os_is_macos, os_is_windows
+from sys.ffi import c_int
 from time.time import _CTimeSpec
 
 # C types
 alias c_void = UInt8
-alias c_char = UInt8
-alias c_schar = Int8
-alias c_uchar = UInt8
-alias c_short = Int16
-alias c_ushort = UInt16
-alias c_int = Int32
-alias c_uint = UInt32
-alias c_long = Int64
-alias c_ulong = UInt64
-alias c_float = Float32
-alias c_double = Float64
-alias c_size_t = UInt
-alias c_ssize_t = Int
 alias cc_t = UInt8
-alias c_speed_t = UInt64
 alias NCCS = Int8
-
 alias tcflag_t = UInt64
-
-# alias tcflag_t = UInt32
-# alias speed_t = UInt32
-# 64bit system
-
-
-# File descriptors
-alias STDIN = 0
-alias STDOUT = 1
-alias STDERR = 2
+alias c_speed_t = UInt64
 
 
 # control_flags values
@@ -40,7 +17,6 @@ alias CREAD = 2048 if os_is_macos() else 128
 alias CLOCAL = 32768 if os_is_macos() else 2048
 alias PARENB = 4096 if os_is_macos() else 256
 alias CSIZE = 768 if os_is_macos() else 48
-
 
 # local_flags values
 alias ICANON = 256 if os_is_macos() else 2
@@ -53,10 +29,8 @@ alias IEXTEN = 1024 if os_is_macos() else 32768
 alias NOFLSH = 2147483648 if os_is_macos() else 128
 alias TOSTOP = 4194304 if os_is_macos() else 256
 
-
 # output_flags values
 alias OPOST = 1
-
 
 # input_flags values
 alias INLCR = 64
@@ -220,84 +194,140 @@ struct Termios(Movable, Stringable, Writable):
 
 
 fn tcgetattr(fd: c_int, termios_p: Pointer[Termios]) -> c_int:
-    """Libc POSIX `tcgetattr` function
-    Reference: https://man7.org/linux/man-pages/man3/tcgetattr.3.html
-    Fn signature: int tcgetattr(int fd, struct Termios *termios_p).
+    """Libc POSIX `tcgetattr` function.
+
+    Get the parameters associated with the terminal referred to by the file descriptor `fd`.
 
     Args:
         fd: File descriptor.
         termios_p: Termios struct.
+
+    #### C Function:
+    ```c
+    int tcgetattr(int fd, struct Termios *termios_p);
+    ```
+
+    #### Notes:
+    Reference: https://man7.org/linux/man-pages/man3/tcgetattr.3.html
     """
     return external_call["tcgetattr", c_int](fd, termios_p)
 
 
 fn tcsetattr(fd: c_int, optional_actions: c_int, termios_p: Pointer[Termios]) -> c_int:
-    """Libc POSIX `tcsetattr` function
-    Reference: https://man7.org/linux/man-pages/man3/tcsetattr.3.html
-    Fn signature: int tcsetattr(int fd, int optional_actions, const struct Termios *termios_p).
+    """Libc POSIX `tcsetattr` function.
+
+    Set the parameters associated with the terminal referred to by the file descriptor `fd`.
 
     Args:
         fd: File descriptor.
         optional_actions: Optional actions.
         termios_p: Termios struct.
+
+    #### C Function:
+    ```c
+    int tcsetattr(int fd, int optional_actions, const struct Termios *termios_p);
+    ```
+
+    #### Notes:
+    Reference: https://man7.org/linux/man-pages/man3/tcsetattr.3.html
     """
     return external_call["tcsetattr", c_int](fd, optional_actions, termios_p)
 
 
 fn tcsendbreak(fd: c_int, duration: c_int) -> c_int:
-    """Libc POSIX `tcsendbreak` function
-    Reference: https://man7.org/linux/man-pages/man3/tcsendbreak.3.html
-    Fn signature: int tcsendbreak(int fd, int duration);.
+    """Libc POSIX `tcsendbreak` function.
+
+    Send a break on the terminal referred to by the file descriptor `fd`.
 
     Args:
         fd: File descriptor.
         duration: Duration.
+
+    #### C Function:
+    ```c
+    int tcsendbreak(int fd, int duration);
+    ```
+
+    #### Notes:
+    Reference: https://man7.org/linux/man-pages/man3/tcsendbreak.3.html
     """
     return external_call["tcsendbreak", c_int, c_int, c_int](fd, duration)
 
 
 fn tcdrain(fd: c_int) -> c_int:
-    """Libc POSIX `tcdrain` function
-    Reference: https://man7.org/linux/man-pages/man3/tcdrain.3.html
-    Fn signature: int tcdrain(int fd).
+    """Libc POSIX `tcdrain` function.
+
+    Drain the output buffer of the terminal referred to by the file descriptor `fd`.
 
     Args:
         fd: File descriptor.
+
+    #### C Function:
+    ```c
+    int tcdrain(int fd);
+    ```
+
+    #### Notes:
+    Reference: https://man7.org/linux/man-pages/man3/tcdrain.3.html
     """
     return external_call["tcdrain", c_int, c_int](fd)
 
 
 fn tcflush(fd: c_int, queue_selector: c_int) -> c_int:
-    """Libc POSIX `tcflush` function
-    Reference: https://man7.org/linux/man-pages/man3/tcflush.3.html
-    Fn signature: int tcflush(int fd, int queue_selector);.
+    """Libc POSIX `tcflush` function.
+
+    Flush the data transmitted or received on the terminal referred to by the file descriptor `fd`.
 
     Args:
         fd: File descriptor.
         queue_selector: Queue selector.
+
+    #### C Function:
+    ```c
+    int tcflush(int fd, int queue_selector);
+    ```
+
+    #### Notes:
+    Reference: https://man7.org/linux/man-pages/man3/tcflush.3.html
     """
     return external_call["tcflush", c_int, c_int, c_int](fd, queue_selector)
 
 
 fn tcflow(fd: c_int, action: c_int) -> c_int:
-    """Libc POSIX `tcflow` function
-    Reference: https://man7.org/linux/man-pages/man3/tcflow.3.html
-    Fn signature: int tcflow(int fd, int action).
+    """Libc POSIX `tcflow` function.
+
+    Suspend or resume transmission on the terminal referred to by the file descriptor `fd`.
 
     Args:
         fd: File descriptor.
         action: Action.
+
+    #### C Function:
+    ```c
+    int tcflow(int fd, int action);
+    ```
+
+    #### Notes:
+    Reference: https://man7.org/linux/man-pages/man3/tcflow.3.html
     """
     return external_call["tcflow", c_int, c_int, c_int](fd, action)
 
 
 fn cfmakeraw(termios_p: Pointer[Termios]) -> c_void:
-    """Libc POSIX `cfmakeraw` function
-    Reference: https://man7.org/linux/man-pages/man3/tcsetattr.3.html
-    Fn signature: void cfmakeraw(struct Termios *termios_p).
+    """Libc POSIX `cfmakeraw` function.
+
+    Set the terminal attributes to raw mode.
 
     Args:
         termios_p: Reference to a Termios struct.
+
+    #### C Function:
+    ```c
+    void cfmakeraw(struct Termios *termios_p);
+    ```
+
+    #### Notes:
+    Reference: https://man7.org/linux/man-pages/man3/cfmakeraw.3.html
     """
     return external_call["cfmakeraw", c_void](termios_p)
 
@@ -341,82 +371,107 @@ fn cfmakeraw(termios_p: Pointer[Termios]) -> c_void:
 #     return external_call["tcsetwinsize", c_int, c_int, UnsafePointer[winsize]](fd, winsize_p)
 
 
-fn read(fildes: c_int, buf: UnsafePointer[c_void], nbyte: UInt) -> c_int:
-    """Libc POSIX `read` function
-    Reference: https://man7.org/linux/man-pages/man3/read.3p.html
-    Fn signature: sssize_t read(int fildes, void *buf, size_t nbyte).
+fn read(fd: c_int, buf: UnsafePointer[c_void], size: UInt) -> c_int:
+    """Libc POSIX `read` function.
 
-    Args: fildes: A File Descriptor.
+    Read `size` bytes from file descriptor `fd` into the buffer `buf`.
+
+    Args:
+        fd: A File Descriptor.
         buf: A pointer to a buffer to store the read data.
-        nbyte: The number of bytes to read.
-    Returns: The number of bytes read or -1 in case of failure.
+        size: The number of bytes to read.
+
+    Returns:
+        The number of bytes read or -1 in case of failure.
+
+    #### C Function:
+    ```c
+    ssize_t read(int fildes, void *buf, size_t nbyte);
+    ```
+
+    #### Notes:
+    Reference: https://man7.org/linux/man-pages/man3/read.3p.html.
     """
-    return external_call["read", Int, c_int, UnsafePointer[c_void], UInt](fildes, buf, nbyte)
+    return external_call["read", Int, c_int, UnsafePointer[c_void], UInt](fd, buf, size)
 
 
-### Monitoring file descriptors ###
-@value
-@register_passable("trivial")
-struct epoll_data:
-    var ptr: UnsafePointer[c_void]
-    var fd: c_int
-    var u32: UInt32
-    var u64: UInt64
+fn get_errno() -> c_int:
+    """Get a copy of the current value of the `errno` global variable for
+    the current thread.
 
-    fn __init__(out self, fd: c_int):
-        self.ptr = UnsafePointer[c_void]()
-        self.fd = fd
-        self.u32 = 0
-        self.u64 = 0
+    Returns:
+        A copy of the current value of `errno` for the current thread.
+    """
 
-
-@value
-@register_passable("trivial")
-struct epoll_event:
-    var events: UInt32
-    """Epoll events."""
-    var data: epoll_data
-    """User data variable."""
+    @parameter
+    if os_is_windows():
+        var errno = InlineArray[c_int, 1]()
+        _ = external_call["_get_errno", c_void](errno.unsafe_ptr())
+        return errno[0]
+    else:
+        alias loc = "__error" if os_is_macos() else "__errno_location"
+        return external_call[loc, UnsafePointer[c_int]]()[]
 
 
-# EPOLL op values
-alias EPOLL_CTL_ADD = 1
-alias EPOLL_CTL_DEL = 2
-alias EPOLL_CTL_MOD = 3
-
-# EPOLL op values
-alias EPOLLIN = 1
-alias EPOLLOUT = 4
-alias EPOLLRDHUP = 8192
-alias EPOLLPRI = 2
-alias EPOLLERR = 8
-alias EPOLLHUP = 16
-alias EPOLLET = 0x80000000
-alias EPOLLONESHOT = 0x40000000
-alias EPOLLEXCLUSIVE = 0x10000000
-
-
-fn epoll_create(size: c_int) -> c_int:
-    return external_call["epoll_create", c_int, c_int](size)
-
-
-fn epoll_create1(flags: c_int) -> c_int:
-    return external_call["epoll_create1", c_int, c_int](flags)
-
-
-fn epoll_ctl(epfd: c_int, op: c_int, fd: c_int, event: UnsafePointer[epoll_event]) -> c_int:
-    return external_call["epoll_ctl", c_int, c_int, c_int, c_int, UnsafePointer[epoll_event]](epfd, op, fd, event)
-
-
-fn epoll_wait(epfd: c_int, events: UnsafePointer[epoll_event], maxevents: c_int, timeout: c_int) -> c_int:
-    return external_call["epoll_wait", c_int, c_int, UnsafePointer[epoll_event], c_int, c_int](
-        epfd, events, maxevents, timeout
-    )
-
-
-# fn epoll_pwait(epfd: c_int, events: UnsafePointer[epoll_event], maxevents: c_int, timeout: c_int, sigmask: UnsafePointer[sigset_t]) -> c_int:
-#     return external_call["epoll_pwait", c_int, c_int, UnsafePointer[epoll_event], c_int, c_int, UnsafePointer[sigset_t]](epfd, events, maxevents, timeout, sigmask)
-
-
-# fn epoll_pwait2(epfd: c_int, events: UnsafePointer[epoll_event], maxevents: c_int, timeout: UnsafePointer[_CTimeSpec], sigmask: UnsafePointer[sigset_t]) -> c_int:
-#     return external_call["epoll_pwait", c_int, c_int, UnsafePointer[epoll_event], c_int, c_int, UnsafePointer[sigset_t]](epfd, events, maxevents, timeout, sigmask)
+# --- ( error.h Constants )-----------------------------------------------------
+# TODO: These are probably platform specific, we should check the values on each linux and macos.
+alias EPERM = 1
+alias ENOENT = 2
+alias ESRCH = 3
+alias EINTR = 4
+alias EIO = 5
+alias ENXIO = 6
+alias E2BIG = 7
+alias ENOEXEC = 8
+alias EBADF = 9
+alias ECHILD = 10
+alias EAGAIN = 11
+alias ENOMEM = 12
+alias EACCES = 13
+alias EFAULT = 14
+alias ENOTBLK = 15
+alias EBUSY = 16
+alias EEXIST = 17
+alias EXDEV = 18
+alias ENODEV = 19
+alias ENOTDIR = 20
+alias EISDIR = 21
+alias EINVAL = 22
+alias ENFILE = 23
+alias EMFILE = 24
+alias ENOTTY = 25
+alias ETXTBSY = 26
+alias EFBIG = 27
+alias ENOSPC = 28
+alias ESPIPE = 29
+alias EROFS = 30
+alias EMLINK = 31
+alias EPIPE = 32
+alias EDOM = 33
+alias ERANGE = 34
+alias EWOULDBLOCK = EAGAIN
+alias EINPROGRESS = 36 if os_is_macos() else 115
+alias EALREADY = 37 if os_is_macos() else 114
+alias ENOTSOCK = 38 if os_is_macos() else 88
+alias EDESTADDRREQ = 39 if os_is_macos() else 89
+alias EMSGSIZE = 40 if os_is_macos() else 90
+alias ENOPROTOOPT = 42 if os_is_macos() else 92
+alias EAFNOSUPPORT = 47 if os_is_macos() else 97
+alias EADDRINUSE = 48 if os_is_macos() else 98
+alias EADDRNOTAVAIL = 49 if os_is_macos() else 99
+alias ENETDOWN = 50 if os_is_macos() else 100
+alias ENETUNREACH = 51 if os_is_macos() else 101
+alias ECONNABORTED = 53 if os_is_macos() else 103
+alias ECONNRESET = 54 if os_is_macos() else 104
+alias ENOBUFS = 55 if os_is_macos() else 105
+alias EISCONN = 56 if os_is_macos() else 106
+alias ENOTCONN = 57 if os_is_macos() else 107
+alias ETIMEDOUT = 60 if os_is_macos() else 110
+alias ECONNREFUSED = 61 if os_is_macos() else 111
+alias ELOOP = 62 if os_is_macos() else 40
+alias ENAMETOOLONG = 63 if os_is_macos() else 36
+alias EHOSTUNREACH = 65 if os_is_macos() else 113
+alias EDQUOT = 69 if os_is_macos() else 122
+alias ENOMSG = 91 if os_is_macos() else 42
+alias EPROTO = 100 if os_is_macos() else 71
+alias EOPNOTSUPP = 102 if os_is_macos() else 95

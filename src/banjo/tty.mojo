@@ -1,4 +1,5 @@
-from banjo.termios import Termios, tcgetattr, tcsetattr, set_raw, set_cbreak, STDIN, WhenOption
+from banjo.termios import Termios, tcgetattr, tcsetattr, set_raw, set_cbreak, WhenOption
+from sys import stdin
 
 
 # TTY State modes
@@ -21,13 +22,16 @@ struct Mode:
 @value
 @register_passable("trivial")
 struct TTY[mode: Mode = Mode.RAW]():
-    var fd: Int32
+    var fd: FileDescriptor
+    """File descriptor for the terminal."""
     var original_state: Termios
+    """Original state of the terminal."""
 
     fn __init__(out self) raises:
-        self.fd = STDIN
+        self.fd = stdin
         self.original_state = tcgetattr(self.fd)
 
+        @parameter
         if mode == Mode.RAW:
             _ = set_raw(self.fd)
         elif mode == Mode.CBREAK:

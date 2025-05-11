@@ -2,9 +2,6 @@ from banjo.termios.terminal import tcgetattr, tcsetattr, tcsendbreak, tcdrain, t
 from banjo.termios.tty import cfmakecbreak, cfmakeraw, set_raw, set_cbreak, FlowOption, WhenOption, FlushOption
 from banjo.termios.c import (
     Termios,
-    STDIN,
-    STDOUT,
-    STDERR,
     CREAD,
     CLOCAL,
     PARENB,

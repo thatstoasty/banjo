@@ -1,29 +1,14 @@
 from utils import StaticTuple
 from collections import InlineArray
 from memory import UnsafePointer
-from .termios.c import c_void, c_int, STDIN
 from sys.ffi import external_call, os_is_windows, os_is_macos
 from collections import Optional, Set
-from sys import exit
+from sys import exit, stdin
 from time.time import _CTimeSpec
 
-
-fn get_errno() -> c_int:
-    """Get a copy of the current value of the `errno` global variable for
-    the current thread.
-
-    Returns:
-        A copy of the current value of `errno` for the current thread.
-    """
-
-    @parameter
-    if os_is_windows():
-        var errno = InlineArray[c_int, 1]()
-        _ = external_call["_get_errno", c_void](errno.unsafe_ptr())
-        return errno[0]
-    else:
-        alias loc = "__error" if os_is_macos() else "__errno_location"
-        return external_call[loc, UnsafePointer[c_int]]()[]
+from banjo.termios.c import c_void, c_int
+import banjo.termios.c
+from banjo._bitset import BitSet
 
 
 @value
@@ -33,53 +18,35 @@ struct timeval:
     var tv_usec: Int64
 
 
-@value
-@register_passable("trivial")
-struct FD_SET:
-    var bits: StaticTuple[Int64, 16]
-
-    fn __init__(out self):
-        self.bits = StaticTuple[Int64, 16]()
-
-        @parameter
-        for i in range(16):
-            self.bits[i] = 0
-
-    fn set(mut self, fd: Int):
-        self.bits[fd // 64] |= 1 << fd % 64
-
-    fn is_set(self, fd: Int) -> Bool:
-        return (self.bits[fd // 64] & (1 << fd % 64)) != 0
-
-
-fn FD_ZERO[origin: MutableOrigin](set: Pointer[FD_SET, origin]) -> c_void:
-    """Libc POSIX `FD_ZERO` function
-    Reference: https://man7.org/linux/man-pages/man2/select.2.html
-    Fn signature: void FD_ZERO(FD_SET *set).
-
-    Args:
-        set: A pointer to the set of file descriptors to clear.
-    """
-    return external_call["FD_ZERO", c_void, Pointer[FD_SET, origin]](set)
+alias FileDescriptorBitSet = BitSet[16]
 
 
 fn _select(
     nfds: c_int,
-    readfds: Pointer[FD_SET],
-    writefds: Pointer[FD_SET],
-    exceptfds: Pointer[FD_SET],
+    readfds: Pointer[FileDescriptorBitSet],
+    writefds: Pointer[FileDescriptorBitSet],
+    exceptfds: Pointer[FileDescriptorBitSet],
     timeout: Pointer[timeval],
 ) -> c_int:
-    """Libc POSIX `select` function
-    Reference: https://man7.org/linux/man-pages/man2/select.2.html
-    Fn signature: int select(int nfds, FD_SET *readfds, FD_SET *writefds, FD_SET *exceptfds, struct timeval *timeout).
+    """Libc POSIX `select` function.
 
-    Args: nfds: The highest-numbered file descriptor in any of the three sets, plus 1.
+    Args:
+        nfds: The highest-numbered file descriptor in any of the three sets, plus 1.
         readfds: A pointer to the set of file descriptors to read from.
         writefds: A pointer to the set of file descriptors to write to.
         exceptfds: A pointer to the set of file descriptors to check for exceptions.
         timeout: A pointer to a timeval struct to set a timeout.
-    Returns: The number of file descriptors in the sets or -1 in case of failure.
+
+    Returns:
+        The number of file descriptors in the sets or -1 in case of failure.
+
+    #### C Function:
+    ```c
+    int select(int nfds, FileDescriptorBitSet *readfds, FileDescriptorBitSet *writefds, FileDescriptorBitSet *exceptfds, struct timeval *timeout);
+    ```
+
+    #### Notes:
+    Reference: https://man7.org/linux/man-pages/man2/select.2.html
     """
     return external_call[
         "select",
@@ -89,9 +56,9 @@ fn _select(
 
 fn select(
     highest_fd: c_int,
-    read_fds: FD_SET,
-    write_fds: FD_SET,
-    except_fds: FD_SET,
+    read_fds: FileDescriptorBitSet,
+    write_fds: FileDescriptorBitSet,
+    except_fds: FileDescriptorBitSet,
     timeout: timeval,
 ) raises -> UInt:
     """Libc POSIX `select` function.
@@ -108,7 +75,7 @@ fn select(
 
     #### C Function Signature:
     ```c
-    int select(int nfds, FD_SET *readfds, FD_SET *writefds, FD_SET *exceptfds, struct timeval *timeout);
+    int select(int nfds, FileDescriptorBitSet *readfds, FileDescriptorBitSet *writefds, FileDescriptorBitSet *exceptfds, struct timeval *timeout);
     ```
 
     #### Reference
@@ -116,24 +83,24 @@ fn select(
     """
     var result = _select(
         highest_fd,
-        Pointer.address_of(read_fds),
-        Pointer.address_of(write_fds),
-        Pointer.address_of(except_fds),
-        Pointer.address_of(timeout),
+        Pointer(to=read_fds),
+        Pointer(to=write_fds),
+        Pointer(to=except_fds),
+        Pointer(to=timeout),
     )
 
     if result == -1:
-        var errno = get_errno()
-        if errno == EBADF:
-            raise Error("EBADF: An invalid file descriptor was given in one of the sets.")
-        elif errno == EINTR:
-            raise Error("EINTR: A signal was caught.")
-        elif errno == EINVAL:
-            raise Error("EINVAL: nfds is negative or exceeds the RLIMIT_NOFILE resource limit.")
-        elif errno == ENOMEM:
-            raise Error("ENOMEM: Unable to allocate memory for internal tables.")
+        var errno = c.get_errno()
+        if errno == c.EBADF:
+            raise Error("[EBADF] An invalid file descriptor was given in one of the sets.")
+        elif errno == c.EINTR:
+            raise Error("[EINTR] A signal was caught.")
+        elif errno == c.EINVAL:
+            raise Error("[EINVAL] nfds is negative or exceeds the RLIMIT_NOFILE resource limit.")
+        elif errno == c.ENOMEM:
+            raise Error("[ENOMEM] Unable to allocate memory for internal tables.")
         else:
-            raise Error("Unknown error occurred.")
+            raise Error("[UNKNOWN] Unknown error occurred.")
 
     return UInt(Int(result))
 
@@ -283,8 +250,8 @@ fn stdin_select(timeout: Optional[Int] = None) raises -> Int:
         List of (key, events) for ready file objects
         `events` is a bitwise mask of `EVENT_READ`|`EVENT_WRITE`.
     """
-    var readers = FD_SET()
-    readers.set(STDIN)
+    var readers = FileDescriptorBitSet()
+    readers.set(stdin.value)
 
     var tv = timeval(0, 0)
     if timeout:
@@ -292,17 +259,17 @@ fn stdin_select(timeout: Optional[Int] = None) raises -> Int:
 
     if (
         select(
-            STDIN + 1,
+            stdin.value + 1,
             readers,
-            FD_SET(),
-            FD_SET(),
+            FileDescriptorBitSet(),
+            FileDescriptorBitSet(),
             tv,
         )
         == 0
     ):
         return 0
 
-    if readers.is_set(0):
+    if readers.test(0):
         var events = 0
         events |= EVENT_READ
         return events
@@ -377,11 +344,11 @@ struct SelectSelector(Movable):
             List of (key, events) for ready file objects
             `events` is a bitwise mask of `EVENT_READ`|`EVENT_WRITE`.
         """
-        var readers = FD_SET()
+        var readers = FileDescriptorBitSet()
         for fd in self.readers:
             readers.set(fd[])
 
-        var writers = FD_SET()
+        var writers = FileDescriptorBitSet()
         for fd in self.writers:
             writers.set(fd[])
 
@@ -393,20 +360,20 @@ struct SelectSelector(Movable):
             self._highest_fd + 1,
             readers,
             writers,
-            FD_SET(),
+            FileDescriptorBitSet(),
             tv,
         )
 
         var ready = List[StaticTuple[Int, 2]]()
         for fd in self.readers:
             var events = 0
-            if readers.is_set(fd[]):
+            if readers.test(fd[]):
                 events |= EVENT_READ
             ready.append(StaticTuple[Int, 2](fd[], events))
 
         for fd in self.writers:
             var events = 0
-            if writers.is_set(fd[]):
+            if writers.test(fd[]):
                 print(self._highest_fd)
                 events |= EVENT_WRITE
             ready.append(StaticTuple[Int, 2](fd[], events))
@@ -513,9 +480,9 @@ struct SelectSelector(Movable):
 #             var changelist = Kevent(fd, KQ_FILTER_READ, KQ_EV_ADD)
 #             var eventlist = UnsafePointer[Kevent]()
 #             var kev = kevent(self._selector,
-#                 UnsafePointer.address_of(changelist), 1,
+#                 UnsafePointer(to=changelist), 1,
 #                 eventlist, 0,
-#                 UnsafePointer.address_of(timeout)
+#                 UnsafePointer(to=timeout)
 #             )
 #             if kev == -1:
 #                 _ = external_call["perror", c_void, UnsafePointer[UInt8]](String("kevent").unsafe_ptr())
@@ -546,9 +513,9 @@ struct SelectSelector(Movable):
 #             var changelist = Kevent(fd, KQ_FILTER_READ, KQ_EV_DELETE)
 #             var eventlist = UnsafePointer[Kevent]()
 #             var kev = kevent(self._selector,
-#                 UnsafePointer.address_of(changelist), 1,
+#                 UnsafePointer(to=changelist), 1,
 #                 eventlist, 0,
-#                 UnsafePointer.address_of(timeout)
+#                 UnsafePointer(to=timeout)
 #             )
 #             if kev == -1:
 #                 _ = external_call["perror", c_void, UnsafePointer[UInt8]](String("kevent").unsafe_ptr())
@@ -570,11 +537,11 @@ struct SelectSelector(Movable):
 #             List of (key, events) for ready file objects
 #             `events` is a bitwise mask of `EVENT_READ`|`EVENT_WRITE`.
 #         """
-#         var readers = FD_SET()
+#         var readers = FileDescriptorBitSet()
 #         for fd in self.readers:
 #             readers.set(fd[])
 
-#         var writers = FD_SET()
+#         var writers = FileDescriptorBitSet()
 #         for fd in self.writers:
 #             writers.set(fd[])
 
@@ -584,10 +551,10 @@ struct SelectSelector(Movable):
 
 #         if select(
 #             self._highest_fd + 1,
-#             UnsafePointer.address_of(readers),
-#             UnsafePointer.address_of(writers),
-#             UnsafePointer[FD_SET](),
-#             UnsafePointer.address_of(tv)
+#             UnsafePointer(to=readers),
+#             UnsafePointer(to=writers),
+#             UnsafePointer[FileDescriptorBitSet](),
+#             UnsafePointer(to=tv)
 #         ) == -1:
 #             # _ = external_call["perror", c_void, UnsafePointer[UInt8]](String("select").unsafe_ptr())
 #             print("select failed")
@@ -609,65 +576,70 @@ struct SelectSelector(Movable):
 
 #         return ready
 
-# --- ( error.h Constants )-----------------------------------------------------
-# TODO: These are probably platform specific, we should check the values on each linux and macos.
-alias EPERM = 1
-alias ENOENT = 2
-alias ESRCH = 3
-alias EINTR = 4
-alias EIO = 5
-alias ENXIO = 6
-alias E2BIG = 7
-alias ENOEXEC = 8
-alias EBADF = 9
-alias ECHILD = 10
-alias EAGAIN = 11
-alias ENOMEM = 12
-alias EACCES = 13
-alias EFAULT = 14
-alias ENOTBLK = 15
-alias EBUSY = 16
-alias EEXIST = 17
-alias EXDEV = 18
-alias ENODEV = 19
-alias ENOTDIR = 20
-alias EISDIR = 21
-alias EINVAL = 22
-alias ENFILE = 23
-alias EMFILE = 24
-alias ENOTTY = 25
-alias ETXTBSY = 26
-alias EFBIG = 27
-alias ENOSPC = 28
-alias ESPIPE = 29
-alias EROFS = 30
-alias EMLINK = 31
-alias EPIPE = 32
-alias EDOM = 33
-alias ERANGE = 34
-alias EWOULDBLOCK = EAGAIN
-alias EINPROGRESS = 36 if os_is_macos() else 115
-alias EALREADY = 37 if os_is_macos() else 114
-alias ENOTSOCK = 38 if os_is_macos() else 88
-alias EDESTADDRREQ = 39 if os_is_macos() else 89
-alias EMSGSIZE = 40 if os_is_macos() else 90
-alias ENOPROTOOPT = 42 if os_is_macos() else 92
-alias EAFNOSUPPORT = 47 if os_is_macos() else 97
-alias EADDRINUSE = 48 if os_is_macos() else 98
-alias EADDRNOTAVAIL = 49 if os_is_macos() else 99
-alias ENETDOWN = 50 if os_is_macos() else 100
-alias ENETUNREACH = 51 if os_is_macos() else 101
-alias ECONNABORTED = 53 if os_is_macos() else 103
-alias ECONNRESET = 54 if os_is_macos() else 104
-alias ENOBUFS = 55 if os_is_macos() else 105
-alias EISCONN = 56 if os_is_macos() else 106
-alias ENOTCONN = 57 if os_is_macos() else 107
-alias ETIMEDOUT = 60 if os_is_macos() else 110
-alias ECONNREFUSED = 61 if os_is_macos() else 111
-alias ELOOP = 62 if os_is_macos() else 40
-alias ENAMETOOLONG = 63 if os_is_macos() else 36
-alias EHOSTUNREACH = 65 if os_is_macos() else 113
-alias EDQUOT = 69 if os_is_macos() else 122
-alias ENOMSG = 91 if os_is_macos() else 42
-alias EPROTO = 100 if os_is_macos() else 71
-alias EOPNOTSUPP = 102 if os_is_macos() else 95
+
+# ### Monitoring file descriptors ###
+# @value
+# @register_passable("trivial")
+# struct epoll_data:
+#     var ptr: UnsafePointer[c_void]
+#     var fd: c_int
+#     var u32: UInt32
+#     var u64: UInt64
+
+#     fn __init__(out self, fd: c_int):
+#         self.ptr = UnsafePointer[c_void]()
+#         self.fd = fd
+#         self.u32 = 0
+#         self.u64 = 0
+
+
+# @value
+# @register_passable("trivial")
+# struct epoll_event:
+#     var events: UInt32
+#     """Epoll events."""
+#     var data: epoll_data
+#     """User data variable."""
+
+
+# # EPOLL op values
+# alias EPOLL_CTL_ADD = 1
+# alias EPOLL_CTL_DEL = 2
+# alias EPOLL_CTL_MOD = 3
+
+# # EPOLL op values
+# alias EPOLLIN = 1
+# alias EPOLLOUT = 4
+# alias EPOLLRDHUP = 8192
+# alias EPOLLPRI = 2
+# alias EPOLLERR = 8
+# alias EPOLLHUP = 16
+# alias EPOLLET = 0x80000000
+# alias EPOLLONESHOT = 0x40000000
+# alias EPOLLEXCLUSIVE = 0x10000000
+
+
+# fn epoll_create(size: c_int) -> c_int:
+#     return external_call["epoll_create", c_int, c_int](size)
+
+
+# fn epoll_create1(flags: c_int) -> c_int:
+#     return external_call["epoll_create1", c_int, c_int](flags)
+
+
+# fn epoll_ctl(epfd: c_int, op: c_int, fd: c_int, event: UnsafePointer[epoll_event]) -> c_int:
+#     return external_call["epoll_ctl", c_int, c_int, c_int, c_int, UnsafePointer[epoll_event]](epfd, op, fd, event)
+
+
+# fn epoll_wait(epfd: c_int, events: UnsafePointer[epoll_event], maxevents: c_int, timeout: c_int) -> c_int:
+#     return external_call["epoll_wait", c_int, c_int, UnsafePointer[epoll_event], c_int, c_int](
+#         epfd, events, maxevents, timeout
+#     )
+
+
+# # fn epoll_pwait(epfd: c_int, events: UnsafePointer[epoll_event], maxevents: c_int, timeout: c_int, sigmask: UnsafePointer[sigset_t]) -> c_int:
+# #     return external_call["epoll_pwait", c_int, c_int, UnsafePointer[epoll_event], c_int, c_int, UnsafePointer[sigset_t]](epfd, events, maxevents, timeout, sigmask)
+
+
+# # fn epoll_pwait2(epfd: c_int, events: UnsafePointer[epoll_event], maxevents: c_int, timeout: UnsafePointer[_CTimeSpec], sigmask: UnsafePointer[sigset_t]) -> c_int:
+# #     return external_call["epoll_pwait", c_int, c_int, UnsafePointer[epoll_event], c_int, c_int, UnsafePointer[sigset_t]](epfd, events, maxevents, timeout, sigmask)

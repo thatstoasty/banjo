@@ -1,8 +1,9 @@
 from utils import Variant
 from time import sleep
-from collections import Optional, Dict
+from collections import Dict
+from sys import stderr
 from runtime.asyncrt import TaskGroup
-from banjo.termios import Termios, tcgetattr, tcsetattr, set_cbreak, WhenOption, STDIN
+from banjo.termios import Termios, tcgetattr, tcsetattr, set_cbreak, WhenOption
 from banjo.tty import TTY, Mode
 from banjo.renderer import Renderer
 from banjo.select import SelectSelector, EVENT_READ, stdin_select
@@ -51,7 +52,7 @@ async fn update(mut tui: TUI):
             if not stdin_select() & EVENT_READ:
                 continue
         except e:
-            print("Error selecting stdin.", e, file=2)
+            print("Error selecting stdin.", e, file=stderr)
 
         if cmd := tui.model.update(read_events()):
             var msg = cmd.value()()
@@ -84,7 +85,7 @@ struct TUI[T: Model]:
     var done: Bool
 
     fn __init__(
-        mut self,
+        out self,
         model: T,
         renderer: Renderer = Renderer(60),
         running: Bool = True,

@@ -1,13 +1,12 @@
-from collections import Dict, Optional
-from collections.string import StringSlice
-from memory import Span
-from banjo.termios import read, STDIN
-from banjo.msg import Msg, FocusMsg, BlurMsg, UnknownInputByteMsg, NoMsg
+from collections import Dict
+from sys import stdin
 from sys.ffi import os_is_windows
+from banjo.termios import read
+from banjo.msg import Msg, FocusMsg, BlurMsg, UnknownInputByteMsg, NoMsg
 
 
 @value
-struct KeyMsg(CollectionElement, ExplicitlyCopyable, Stringable, Writable):
+struct KeyMsg(Movable, Copyable, ExplicitlyCopyable, Stringable, Writable):
     """Contains information about a keypress. KeyMsgs are always sent to
     the program's update function. There are a couple general patterns you could
     use to check for keypresses.
@@ -384,8 +383,12 @@ fn build_ext_sequences() -> Dict[String, Key]:
             i += 1
             continue
 
-        s[String(buffer=List[Byte](Byte(i), 0))] = Key(type=i)
-        s[String(buffer=List[Byte](ord("\x1b"), Byte(i), 0))] = Key(type=i, alt=True)
+        var a = String()
+        a.write_bytes(List[Byte](Byte(i)))
+        s[a] = Key(type=i)
+        var b = String()
+        b.write_bytes(List[Byte](ord("\x1b"), Byte(i)))
+        s[b] = Key(type=i, alt=True)
         if i == KeyType.US.value:
             i = KeyType.DEL.value - 1
 
@@ -551,7 +554,7 @@ fn detect_msg(buf: Span[Byte]) -> (Int, Msg):
 
 fn read_events() -> Msg:
     var buffer = List[Byte](capacity=256)
-    var bytes_read = read(STDIN, buffer.unsafe_ptr(), 256)
+    var bytes_read = read(stdin.value, buffer.unsafe_ptr(), 256)
     buffer._len += Int(bytes_read)
     buffer.append(0)
     _, msg = detect_msg(buffer)
