@@ -1,12 +1,13 @@
 from utils import Variant
 from time import sleep
 from collections import Dict
-from sys import stderr
+from sys import stderr, stdin
 from runtime.asyncrt import TaskGroup
 from banjo.termios import Termios, tcgetattr, tcsetattr, set_cbreak, WhenOption
 from banjo.tty import TTY, Mode
 from banjo.renderer import Renderer
-from banjo.select import SelectSelector, EVENT_READ, stdin_select
+from banjo.multiplex.select import EVENT_READ, stdin_select
+from banjo.multiplex import SelectSelector
 from banjo.key import Key, KeyType, read_events, KeyMsg
 from banjo.msg import Msg, ExitMsg, NoMsg
 
@@ -15,12 +16,8 @@ alias CmdFn = fn () -> Msg
 alias Cmd = Optional[CmdFn]
 
 
-trait Model(CollectionElement):
-    fn init(self) -> Cmd:
-        ...
-
-    # # Temporary? update's function signature doesn't work unless I define __moveinit__ as part of the trait even though it implements Movable.
-    # fn __moveinit__(out self, owned existing: Self):
+trait Model(Movable):
+    # fn init(self) -> Cmd:
     #     ...
 
     fn update(mut self, msg: Msg) -> Cmd:
@@ -47,9 +44,19 @@ fn handle_msg(mut tui: TUI, msg: Msg) -> None:
 
 
 async fn update(mut tui: TUI):
+    var selector = SelectSelector()
+
+    try:
+        selector.register(stdin.value, EVENT_READ)
+    except e:
+        print("Error registering stdin.", e, file=stderr)
+        tui.done = True
+        return
+
     while not tui.done:
         try:
-            if not stdin_select() & EVENT_READ:
+            var reader_status = selector.select()[0][1]
+            if not reader_status & EVENT_READ:
                 continue
         except e:
             print("Error selecting stdin.", e, file=stderr)
@@ -86,11 +93,11 @@ struct TUI[T: Model]:
 
     fn __init__(
         out self,
-        model: T,
+        owned model: T,
         renderer: Renderer = Renderer(60),
         running: Bool = True,
     ):
-        self.model = model
+        self.model = model^
         self.renderer = renderer
         self.running = running
         # self.msgs = List[Msg]()
