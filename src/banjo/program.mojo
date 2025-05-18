@@ -37,10 +37,8 @@ async fn view(tui: TUI):
 
 
 fn handle_msg(mut tui: TUI, msg: Msg) -> None:
-    var cmd = tui.model.update(msg)
-    if cmd:
-        var msg = cmd.value()()
-        handle_msg(tui, msg)
+    if cmd := tui.model.update(msg):
+        handle_msg(tui, cmd.value()())
     return
 
 
