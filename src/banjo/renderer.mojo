@@ -1,5 +1,5 @@
 from time import sleep
-from mist.terminal.screen import clear_screen, move_cursor
+from banjo.terminal.screen import clear_screen, move_cursor
 
 
 @value

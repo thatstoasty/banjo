@@ -1,4 +1,5 @@
 from banjo.termios import Termios, tcgetattr, tcsetattr, set_raw, set_cbreak, WhenOption
+from banjo.termios.c import LocalFlag
 from sys import stdin
 
 
@@ -22,20 +23,25 @@ struct Mode:
 @value
 @register_passable("trivial")
 struct TTY[mode: Mode = Mode.RAW]():
+    """A context manager for terminal state."""
+
     var fd: FileDescriptor
     """File descriptor for the terminal."""
     var original_state: Termios
     """Original state of the terminal."""
+    var state: Termios
+    """Current state of the terminal."""
 
     fn __init__(out self) raises:
         self.fd = stdin
         self.original_state = tcgetattr(self.fd)
+        self.state = self.original_state
 
         @parameter
         if mode == Mode.RAW:
-            _ = set_raw(self.fd)
+            self.state = set_raw(self.fd)
         elif mode == Mode.CBREAK:
-            _ = set_cbreak(self.fd)
+            self.state = set_cbreak(self.fd)
 
     fn restore_original_state(mut self) raises:
         tcsetattr(self.fd, WhenOption.TCSADRAIN, self.original_state)
@@ -45,3 +51,23 @@ struct TTY[mode: Mode = Mode.RAW]():
 
     fn __exit__(mut self) raises:
         self.restore_original_state()
+
+    fn set_attribute(mut self, optional_actions: WhenOption) raises:
+        """Set the terminal attributes."""
+        tcsetattr(self.fd, optional_actions, self.state)
+
+    fn disable_echo(mut self) raises:
+        self.state.c_lflag &= ~LocalFlag.ECHO.value
+        self.set_attribute(WhenOption.TCSADRAIN)
+
+    fn enable_echo(mut self) raises:
+        self.state.c_lflag |= LocalFlag.ECHO.value
+        self.set_attribute(WhenOption.TCSADRAIN)
+
+    fn enable_canonical_mode(mut self) raises:
+        self.state.c_lflag |= LocalFlag.ICANON.value
+        self.set_attribute(WhenOption.TCSADRAIN)
+
+    fn disable_canonical_mode(mut self) raises:
+        self.state.c_lflag &= ~LocalFlag.ICANON.value
+        self.set_attribute(WhenOption.TCSADRAIN)

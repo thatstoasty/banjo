@@ -8,125 +8,165 @@ from time.time import _CTimeSpec
 alias c_void = UInt8
 alias cc_t = UInt8
 alias NCCS = Int8
-alias tcflag_t = UInt64
+
+alias tcflag_t = SIMD[(DType.uint32, DType.uint64)[Int(os_is_macos())], 1]
+"""If `os_is_macos()` is true, use `UInt64`, otherwise use `UInt32`."""
 alias c_speed_t = UInt64
 
 
-# control_flags values
-alias CREAD = 2048 if os_is_macos() else 128
-alias CLOCAL = 32768 if os_is_macos() else 2048
-alias PARENB = 4096 if os_is_macos() else 256
-alias CSIZE = 768 if os_is_macos() else 48
+@value
+@register_passable("trivial")
+struct ControlFlag:
+    """Control mode flags."""
 
-# local_flags values
-alias ICANON = 256 if os_is_macos() else 2
-alias ECHO = 8 if os_is_macos() else 1
-alias ECHOE = 2 if os_is_macos() else 16
-alias ECHOK = 4 if os_is_macos() else 32
-alias ECHONL = 16 if os_is_macos() else 64
-alias ISIG = 128 if os_is_macos() else 1
-alias IEXTEN = 1024 if os_is_macos() else 32768
-alias NOFLSH = 2147483648 if os_is_macos() else 128
-alias TOSTOP = 4194304 if os_is_macos() else 256
-
-# output_flags values
-alias OPOST = 1
-
-# input_flags values
-alias INLCR = 64
-alias IGNCR = 128
-alias ICRNL = 256
-alias IGNBRK = 1
-"""Ignore BREAK condition on input.
-If IGNBRK is set, a BREAK is ignored.  If it is not set
-but BRKINT is set, then a BREAK causes the input and
-output queues to be flushed, and if the terminal is the
-controlling terminal of a foreground process group, it
-will cause a SIGINT to be sent to this foreground process
-group.  When neither IGNBRK nor BRKINT are set, a BREAK
-reads as a null byte ('\\0'), except when PARMRK is set, in
-which case it reads as the sequence \\377 \\0 \\0."""
-alias BRKINT = 2
-alias IGNPAR = 4
-"""Ignore framing errors and parity errors.
-If this bit is set, input bytes with parity or framing
-errors are marked when passed to the program.  This bit is
-meaningful only when INPCK is set and IGNPAR is not set.
-The way erroneous bytes are marked is with two preceding
-bytes, \\377 and \\0.  Thus, the program actually reads
-three bytes for one erroneous byte received from the
-terminal.  If a valid byte has the value \\377, and ISTRIP
-(see below) is not set, the program might confuse it with
-the prefix that marks a parity error.  Therefore, a valid
-byte \\377 is passed to the program as two bytes, \\377
-\\377, in this case."""
-
-# If neither IGNPAR nor PARMRK is set, read a character with
-# a parity error or framing error as \0.
-
-alias PARMRK = 8
-alias INPCK = 16  # Enable input parity checking.
-alias ISTRIP = 32  # Strip off eighth bit.
-
-# alias INLCR  Translate NL to CR on input.
-
-# alias IGNCR  Ignore carriage return on input.
-
-# alias ICRNL  Translate carriage return to newline on input (unless
-#         IGNCR is set).
-
-# alias IUCLC  (not in POSIX) Map uppercase characters to lowercase on
-#         input.
-
-alias IXON = 512 if os_is_macos() else 1024
-"""Enable XON/XOFF flow control on output."""
-alias IXANY = 2048
-"""(XSI) Typing any character will restart stopped output. (The default is to allow just the START character to restart output.)"""
-alias IXOFF = 1024 if os_is_macos() else 4096
-"""Enable XON/XOFF flow control on input."""
-
-# alias IMAXBEL
-#         (not in POSIX) Ring bell when input queue is full.  Linux
-#         does not implement this bit, and acts as if it is always
-#         set.
-
-# alias IUTF8 (since Linux 2.6.4)
-#         (not in POSIX) Input is UTF8; this allows character-erase
-#         to be correctly performed in cooked mode.
+    var value: tcflag_t
+    alias CREAD = Self(2048) if os_is_macos() else Self(128)
+    """Enable receiver."""
+    alias CLOCAL = Self(32768) if os_is_macos() else Self(2048)
+    """Ignore modem control lines."""
+    alias PARENB = Self(4096) if os_is_macos() else Self(256)
+    """Enable parity generation on output and parity checking on input."""
+    alias CSIZE = Self(768) if os_is_macos() else Self(48)
+    """Character size mask."""
+    alias CS8 = Self(768)
+    """8 bits per byte."""
 
 
-# Special Character indexes for control_characters
-alias VEOF = 0
-"""Signal End-Of-Input `Ctrl-D`"""
-alias VEOL = 1
-"""Signal End-Of-Line `Disabled`"""
-alias VERASE = 3
-"""Delete previous character `Backspace`"""
-alias VINTR = 8
-"""Generate SIGINT `Ctrl-C`"""
-alias VKILL = 5
-"""Erase current line `Ctrl-U`"""
-alias VMIN = 16
-"""The MIN value `1`"""
-alias VQUIT = 9
-"""Generate SIGQUIT `Ctrl-\\`"""
-alias VSTART = 12
-"""Resume output `Ctrl-Q`"""
-alias VSTOP = 13
-"""Suspend output `Ctrl-S`"""
-alias VSUSP = 10
-"""Suspend program `Ctrl-Z`"""
-alias VTIME = 17
-"""TIME value `0`"""
+@value
+@register_passable("trivial")
+struct LocalFlag:
+    """Local mode flags."""
+
+    var value: tcflag_t
+    alias ICANON = Self(256) if os_is_macos() else Self(2)
+    """Canonical input processing."""
+    alias ECHO = Self(8) if os_is_macos() else Self(1)
+    """Enable echoing of input characters."""
+    alias ECHOE = Self(2) if os_is_macos() else Self(16)
+    """Echo erase character as error-correcting backspace."""
+    alias ECHOK = Self(4) if os_is_macos() else Self(32)
+    """Echo KILL character as a line kill."""
+    alias ECHONL = Self(16) if os_is_macos() else Self(64)
+    """Echo NL after CR on input."""
+    alias ISIG = Self(128) if os_is_macos() else Self(1)
+    """Enable signals generated by INTR, QUIT, SUSP, and DSUSP characters."""
+    alias IEXTEN = Self(1024) if os_is_macos() else Self(32768)
+    """Enable implementation-defined input processing.  This includes the use of the `START` and `STOP` characters for flow control."""
+    alias NOFLSH = Self(2147483648) if os_is_macos() else Self(128)
+    """Disable flushing of output and input queues when generating signals."""
+    alias TOSTOP = Self(4194304) if os_is_macos() else Self(256)
+    """Send SIGTTOU for background process on output."""
 
 
-alias CS8 = 768
+@value
+@register_passable("trivial")
+struct OutputFlag:
+    """Output mode flags."""
+
+    var value: tcflag_t
+    alias OPOST = Self(1)
+    """Enable implementation-defined output processing."""
+
+
+@value
+@register_passable("trivial")
+struct InputFlag:
+    var value: tcflag_t
+    alias INLCR = Self(64)
+    """Map NL to CR on input."""
+    alias IGNCR = Self(128)
+    """Ignore CR on input."""
+    alias ICRNL = Self(256)
+    """Translate carriage return to newline on input (unless IGNCR is set)."""
+    alias IGNBRK = Self(1)
+    """Ignore BREAK condition on input.
+    If IGNBRK is set, a BREAK is ignored.  If it is not set
+    but BRKINT is set, then a BREAK causes the input and
+    output queues to be flushed, and if the terminal is the
+    controlling terminal of a foreground process group, it
+    will cause a SIGINT to be sent to this foreground process
+    group.  When neither IGNBRK nor BRKINT are set, a BREAK
+    reads as a null byte ('\\0'), except when PARMRK is set, in
+    which case it reads as the sequence \\377 \\0 \\0."""
+    alias BRKINT = Self(2)
+    alias IGNPAR = Self(4)
+    """Ignore framing errors and parity errors.
+    If this bit is set, input bytes with parity or framing
+    errors are marked when passed to the program.  This bit is
+    meaningful only when INPCK is set and IGNPAR is not set.
+    The way erroneous bytes are marked is with two preceding
+    bytes, \\377 and \\0.  Thus, the program actually reads
+    three bytes for one erroneous byte received from the
+    terminal.  If a valid byte has the value \\377, and ISTRIP
+    (see below) is not set, the program might confuse it with
+    the prefix that marks a parity error.  Therefore, a valid
+    byte \\377 is passed to the program as two bytes, \\377
+    \\377, in this case."""
+
+    # If neither IGNPAR nor PARMRK is set, read a character with
+    # a parity error or framing error as \0.
+
+    alias PARMRK = Self(8)
+    """Mark parity and framing errors."""
+    alias INPCK = Self(16)
+    """Enable input parity checking."""
+    alias ISTRIP = Self(32)
+    """Strip off eighth bit."""
+
+    alias IXON = Self(512) if os_is_macos() else Self(1024)
+    """Enable XON/XOFF flow control on output."""
+    alias IXANY = Self(2048)
+    """(XSI) Typing any character will restart stopped output. (The default is to allow just the START character to restart output.)"""
+    alias IXOFF = Self(1024) if os_is_macos() else Self(4096)
+    """Enable XON/XOFF flow control on input."""
+
+    # alias IMAXBEL
+    #         (not in POSIX) Ring bell when input queue is full.  Linux
+    #         does not implement this bit, and acts as if it is always
+    #         set.
+
+    # alias IUTF8 (since Linux 2.6.4)
+    #         (not in POSIX) Input is UTF8; this allows character-erase
+    #         to be correctly performed in cooked mode.
+
+
+@value
+@register_passable("trivial")
+struct SpecialCharacter:
+    """Special Character indexes for control characters."""
+
+    var value: cc_t
+
+    alias VEOF = Self(0)
+    """Signal End-Of-Input `Ctrl-D`"""
+    alias VEOL = Self(1)
+    """Signal End-Of-Line `Disabled`"""
+    alias VERASE = Self(3)
+    """Delete previous character `Backspace`"""
+    alias VINTR = Self(8)
+    """Generate SIGINT `Ctrl-C`"""
+    alias VKILL = Self(5)
+    """Erase current line `Ctrl-U`"""
+    alias VMIN = Self(16) if os_is_macos() else Self(6)
+    """The MIN value `1`"""
+    alias VQUIT = Self(9)
+    """Generate SIGQUIT `Ctrl-\\`"""
+    alias VSTART = Self(12)
+    """Resume output `Ctrl-Q`"""
+    alias VSTOP = Self(13)
+    """Suspend output `Ctrl-S`"""
+    alias VSUSP = Self(10)
+    """Suspend program `Ctrl-Z`"""
+    alias VTIME = Self(17) if os_is_macos() else Self(5)
+    """The TIME value `0`"""
 
 
 @value
 @register_passable("trivial")
 struct Termios(Movable, Stringable, Writable):
     """Termios libc."""
+
+    alias _CONTROL_CHARACTER_WIDTH = 20 if os_is_macos() else 32
 
     var c_iflag: tcflag_t
     """Input mode flags."""
@@ -136,7 +176,7 @@ struct Termios(Movable, Stringable, Writable):
     """Control mode flags."""
     var c_lflag: tcflag_t
     """Local mode flags."""
-    var c_cc: StaticTuple[cc_t, 20]
+    var c_cc: StaticTuple[cc_t, Self._CONTROL_CHARACTER_WIDTH]
     """Special control characters."""
     var c_ispeed: c_speed_t
     """Input baudrate."""
@@ -144,7 +184,12 @@ struct Termios(Movable, Stringable, Writable):
     """Output baudrate."""
 
     fn __init__(out self):
-        self.c_cc = StaticTuple[cc_t, 20](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+        self.c_cc = StaticTuple[cc_t, Self._CONTROL_CHARACTER_WIDTH]()
+
+        @parameter
+        for n in range(Self._CONTROL_CHARACTER_WIDTH):
+            self.c_cc[n] = 0
+
         self.c_cflag = 0
         self.c_lflag = 0
         self.c_iflag = 0

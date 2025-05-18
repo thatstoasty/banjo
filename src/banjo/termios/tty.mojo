@@ -1,14 +1,6 @@
 import banjo.termios.c
+from banjo.termios.c import InputFlag, OutputFlag, ControlFlag, LocalFlag, SpecialCharacter
 from banjo.termios.terminal import tcgetattr, tcsetattr, FlushOption, FlowOption, WhenOption
-
-# Indices for Termios list.
-alias IFLAG = 0
-alias OFLAG = 1
-alias CFLAG = 2
-alias LFLAG = 3
-alias ISPEED = 4
-alias OSPEED = 5
-alias CC = 6
 
 
 fn cfmakeraw(mut mode: c.Termios):
@@ -26,30 +18,40 @@ fn cfmakeraw(mut mode: c.Termios):
     # See chapter 11 "General Terminal Interface"
     # of POSIX.1-2017 Base Definitions.
     mode.c_iflag &= ~(
-        c.IGNBRK
-        | c.BRKINT
-        | c.IGNPAR
-        | c.PARMRK
-        | c.INPCK
-        | c.ISTRIP
-        | c.INLCR
-        | c.IGNCR
-        | c.ICRNL
-        | c.IXON
-        | c.IXANY
-        | c.IXOFF
+        InputFlag.IGNBRK.value
+        | InputFlag.BRKINT.value
+        | InputFlag.IGNPAR.value
+        | InputFlag.PARMRK.value
+        | InputFlag.INPCK.value
+        | InputFlag.ISTRIP.value
+        | InputFlag.INLCR.value
+        | InputFlag.IGNCR.value
+        | InputFlag.ICRNL.value
+        | InputFlag.IXON.value
+        | InputFlag.IXANY.value
+        | InputFlag.IXOFF.value
     )
 
     # Do not post-process output.
-    mode.c_oflag &= ~c.OPOST
+    mode.c_oflag &= ~OutputFlag.OPOST.value
 
     # Disable parity generation and detection; clear character size mask;
     # let character size be 8 bits.
-    mode.c_cflag &= ~(c.PARENB | c.CSIZE)
-    mode.c_cflag |= c.CS8
+    mode.c_cflag &= ~(ControlFlag.PARENB.value | ControlFlag.CSIZE.value)
+    mode.c_cflag |= ControlFlag.CS8.value
 
     # Clear all POSIX.1-2017 local mode flags.
-    mode.c_lflag &= ~(c.ECHO | c.ECHOE | c.ECHOK | c.ECHONL | c.ICANON | c.IEXTEN | c.ISIG | c.NOFLSH | c.TOSTOP)
+    mode.c_lflag &= ~(
+        LocalFlag.ECHO.value
+        | LocalFlag.ECHOE.value
+        | LocalFlag.ECHOK.value
+        | LocalFlag.ECHONL.value
+        | LocalFlag.ICANON.value
+        | LocalFlag.IEXTEN.value
+        | LocalFlag.ISIG.value
+        | LocalFlag.NOFLSH.value
+        | LocalFlag.TOSTOP.value
+    )
 
     # POSIX.1-2017, 11.1.7 Non-Canonical Mode Input Processing,
     # Case B: MIN>0, TIME=0
@@ -71,14 +73,14 @@ fn cfmakecbreak(mut mode: c.Termios):
         mode: Termios instance to modify in place.
     """
     # Do not echo characters; disable canonical input.
-    mode.c_lflag &= ~(c.ECHO | c.ICANON)
+    mode.c_lflag &= ~(LocalFlag.ECHO.value | LocalFlag.ICANON.value)
 
     # POSIX.1-2017, 11.1.7 Non-Canonical Mode Input Processing,
     # Case B: MIN>0, TIME=0
     # A pending read shall block until MIN (here 1) bytes are received,
     # or a signal is received.
-    mode.c_cc[c.VMIN] = 1
-    mode.c_cc[c.VTIME] = 0
+    mode.c_cc[SpecialCharacter.VMIN.value] = 1
+    mode.c_cc[SpecialCharacter.VTIME.value] = 0
 
 
 fn set_raw(file: FileDescriptor, when: WhenOption = WhenOption.TCSAFLUSH) raises -> c.Termios:

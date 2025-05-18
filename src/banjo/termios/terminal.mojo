@@ -9,9 +9,13 @@ struct WhenOption:
 
     var value: Int
     alias TCSANOW = Self(0)
+    """Change attributes immediately."""
     alias TCSADRAIN = Self(1)
+    """Change attributes after transmitting all queued output."""
     alias TCSAFLUSH = Self(2)
+    """Change attributes after transmitting all queued output and discarding all queued input."""
     alias TCSASOFT = Self(16)
+    """Change attributes without changing the terminal state."""
 
 
 # TTY flow actions.

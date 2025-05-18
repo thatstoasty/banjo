@@ -1,7 +1,6 @@
 from sys.ffi import external_call, os_is_windows, os_is_macos
 from collections import Optional, Set
 from sys import exit, stdin
-from time.time import _CTimeSpec
 
 from banjo.termios.c import c_void, c_int
 import banjo.termios.c

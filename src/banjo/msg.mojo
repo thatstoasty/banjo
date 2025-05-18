@@ -1,5 +1,5 @@
 from utils.variant import Variant
-from banjo.key import KeyMsg
+from banjo.key_msg import KeyMsg
 
 
 @value

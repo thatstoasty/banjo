@@ -4,11 +4,12 @@ from collections import Dict
 from sys import stderr, stdin
 from runtime.asyncrt import TaskGroup
 from banjo.termios import Termios, tcgetattr, tcsetattr, set_cbreak, WhenOption
-from banjo.tty import TTY, Mode
+from banjo.terminal.tty import TTY, Mode
 from banjo.renderer import Renderer
 from banjo.multiplex.select import EVENT_READ, stdin_select
 from banjo.multiplex import SelectSelector
-from banjo.key import Key, KeyType, read_events, KeyMsg
+from banjo.key import Key, KeyType
+from banjo.key_msg import read_events, KeyMsg
 from banjo.msg import Msg, ExitMsg, NoMsg
 
 
