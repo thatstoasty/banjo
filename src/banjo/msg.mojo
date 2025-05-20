@@ -4,7 +4,7 @@ from banjo.key_msg import KeyMsg
 
 @value
 @register_passable("trivial")
-struct FocusMsg:
+struct FocusMsg(Movable, Copyable, Writable):
     """Represents a terminal focus message. This occurs when the terminal gains focus."""
 
     fn write_to[W: Writer, //](self, mut writer: W) -> None:
@@ -13,7 +13,7 @@ struct FocusMsg:
 
 @value
 @register_passable("trivial")
-struct BlurMsg:
+struct BlurMsg(Movable, Copyable, Writable):
     """Represents a terminal blur message. This occurs when the terminal loses focus."""
 
     fn write_to[W: Writer, //](self, mut writer: W) -> None:
@@ -22,7 +22,7 @@ struct BlurMsg:
 
 @value
 @register_passable("trivial")
-struct ExitMsg:
+struct ExitMsg(Movable, Copyable, Writable):
     fn write_to[W: Writer, //](self, mut writer: W) -> None:
         writer.write("ExitMsg")
 
@@ -33,7 +33,7 @@ fn exit_msg() -> Msg:
 
 @value
 @register_passable("trivial")
-struct UnknownInputByteMsg:
+struct UnknownInputByteMsg(Movable, Copyable, Writable):
     var value: Byte
 
     fn write_to[W: Writer, //](self, mut writer: W) -> None:
@@ -42,13 +42,13 @@ struct UnknownInputByteMsg:
 
 @value
 @register_passable("trivial")
-struct NoMsg:
+struct NoMsg(Movable, Copyable, Writable):
     fn write_to[W: Writer, //](self, mut writer: W) -> None:
         writer.write("NoMsg")
 
 
 @value
-struct GeneralMsg:
+struct GeneralMsg(Movable, Copyable, Writable):
     var value: String
 
     fn write_to[W: Writer, //](self, mut writer: W) -> None:
@@ -56,7 +56,7 @@ struct GeneralMsg:
 
 
 @value
-struct Msg:
+struct Msg(Movable, Copyable, Writable):
     alias _type = Variant[ExitMsg, KeyMsg, FocusMsg, BlurMsg, UnknownInputByteMsg, GeneralMsg, NoMsg]
     var value: Self._type
 
@@ -98,8 +98,8 @@ struct Msg:
         elif self.value.isa[NoneType]():
             writer.write(self.value[NoneType])
 
-    fn isa[T: CollectionElement](self) -> Bool:
+    fn isa[T: Movable & Copyable](self) -> Bool:
         return self.value.isa[T]()
 
-    fn __getitem__[T: CollectionElement](ref self) -> ref [__origin_of(self.value)] T:
+    fn __getitem__[T: Movable & Copyable](ref self) -> ref [__origin_of(self.value)] T:
         return self.value[T]

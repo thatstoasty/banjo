@@ -1,4 +1,4 @@
-import mist
+# import mist
 from banjo.terminal.sgr import CSI, BEL, OSC, _write_sequence_to_stdout
 
 alias RESTORE_SCREEN = CSI + "?47l"
@@ -19,22 +19,22 @@ fn reset_terminal() -> None:
     _write_sequence_to_stdout(RESET_STYLE)
 
 
-fn set_foreground_color(color: mist.AnyColor) -> None:
-    """Sets the default foreground color.
+# fn set_foreground_color(color: mist.AnyColor) -> None:
+#     """Sets the default foreground color.
 
-    Args:
-        color: The color to set.
-    """
-    _write_sequence_to_stdout(OSC, "10;", color.sequence[False](), BEL)
+#     Args:
+#         color: The color to set.
+#     """
+#     _write_sequence_to_stdout(OSC, "10;", color.sequence[False](), BEL)
 
 
-fn set_background_color(color: mist.AnyColor) -> None:
-    """Sets the default background color.
+# fn set_background_color(color: mist.AnyColor) -> None:
+#     """Sets the default background color.
 
-    Args:
-        color: The color to set.
-    """
-    _write_sequence_to_stdout(OSC, "11;", color.sequence[True](), BEL)
+#     Args:
+#         color: The color to set.
+#     """
+#     _write_sequence_to_stdout(OSC, "11;", color.sequence[True](), BEL)
 
 
 fn restore_screen() -> None:

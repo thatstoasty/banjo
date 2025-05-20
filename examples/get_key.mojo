@@ -1,5 +1,6 @@
+from sys import stdin
 import banjo.termios
-from banjo.termios import Termios, tcsetattr, tcgetattr, set_raw, STDIN
+from banjo.termios import WhenOption, tcsetattr, tcgetattr, set_raw
 
 
 fn get_key_unix() raises -> String:
@@ -14,7 +15,7 @@ fn get_key_unix() raises -> String:
 fn get_key() raises -> String:
     print("Press c to exit.")
     var k: String = ""
-    var old_settings = set_raw(STDIN)
+    var old_settings = set_raw(stdin)
 
     while True:
         k = get_key_unix()
@@ -22,7 +23,7 @@ fn get_key() raises -> String:
             break
 
     # restore terminal settings
-    tcsetattr(STDIN, termios.TCSADRAIN, old_settings)
+    tcsetattr(stdin, WhenOption.TCSADRAIN, old_settings)
     print(k)
 
     return k

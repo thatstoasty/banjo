@@ -12,12 +12,12 @@ from banjo.terminal.cursor import (
     cursor_forward,
     cursor_back,
     clear_lines,
-    set_cursor_color,
+    # set_cursor_color,
 )
 from banjo.terminal.screen import (
     reset_terminal,
-    set_foreground_color,
-    set_background_color,
+    # set_foreground_color,
+    # set_background_color,
     restore_screen,
     save_screen,
     alt_screen,
@@ -172,9 +172,9 @@ struct TTY[mode: Mode = Mode.RAW]():
             cursor_down(n)
             cursor_forward(n)
 
-    fn set_cursor_color(self, color: mist.AnyColor) -> None:
-        """Set the cursor color."""
-        set_cursor_color(color)
+    # fn set_cursor_color(self, color: mist.AnyColor) -> None:
+    #     """Set the cursor color."""
+    #     set_cursor_color(color)
 
     fn save_cursor_position(self) -> None:
         """Save the current cursor position."""
@@ -188,13 +188,13 @@ struct TTY[mode: Mode = Mode.RAW]():
         """Clear the specified number of lines."""
         clear_lines(n)
 
-    fn set_foreground_color(self, color: mist.AnyColor) -> None:
-        """Set the foreground color."""
-        set_foreground_color(color)
+    # fn set_foreground_color(self, color: mist.AnyColor) -> None:
+    #     """Set the foreground color."""
+    #     set_foreground_color(color)
 
-    fn set_background_color(self, color: mist.AnyColor) -> None:
-        """Set the background color."""
-        set_background_color(color)
+    # fn set_background_color(self, color: mist.AnyColor) -> None:
+    #     """Set the background color."""
+    #     set_background_color(color)
 
     fn restore_screen(self) -> None:
         """Restore the screen to its previous state."""

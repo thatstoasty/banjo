@@ -60,8 +60,8 @@ struct BaseModel(Model):
         self.index = 0
         self.state = State.START
 
-    # fn init(self) -> Cmd:
-    #     return None
+    fn init(self) -> Cmd:
+        return None
 
     fn update(mut self, msg: Msg) -> Cmd:
         if msg.isa[ExitMsg]():

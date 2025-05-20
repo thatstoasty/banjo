@@ -1,4 +1,4 @@
-import mist
+# import mist
 from banjo.terminal.sgr import CSI, OSC, BEL, _write_sequence_to_stdout
 
 # Cursor positioning.
@@ -209,10 +209,10 @@ fn clear_lines(n: UInt16) -> None:
     _write_sequence_to_stdout(CLEAR_LINE + movement)
 
 
-fn set_cursor_color(color: mist.AnyColor) -> None:
-    """Sets the cursor color.
+# fn set_cursor_color(color: mist.AnyColor) -> None:
+#     """Sets the cursor color.
 
-    Args:
-        color: The color to set.
-    """
-    _write_sequence_to_stdout(OSC, "12;", color.sequence[True](), BEL)
+#     Args:
+#         color: The color to set.
+#     """
+#     _write_sequence_to_stdout(OSC, "12;", color.sequence[True](), BEL)

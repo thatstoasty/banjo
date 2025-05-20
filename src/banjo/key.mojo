@@ -4,7 +4,7 @@ from sys.ffi import os_is_windows
 
 @value
 @register_passable("trivial")
-struct KeyType(CollectionElement, Stringable, KeyElement):
+struct KeyType(Movable, Copyable, Stringable, KeyElement):
     """Indicates the key pressed, such as `KeyEnter` or `KeyBreak` or `KeyCtrlC`.
     All other keys will be type `KeyRunes`. To get the rune value, check the Rune
     method on a `Key` struct, or use the `String(Key)` method.
@@ -269,339 +269,294 @@ struct Key(Movable, Copyable, ExplicitlyCopyable, Stringable, Writable):
         return String.write(self)
 
 
-fn build_key_names() -> Dict[KeyType, String]:
-    """Mappings for control keys and other special keys to human friendly string representations.
-
-    Returns:
-        A dictionary mapping control keys and other special keys to human friendly string representations.
-    """
-    var keys = Dict[KeyType, String]()
-    keys[KeyType.NUL] = "ctrl+@"
-    keys[KeyType.SOH] = "ctrl+a"
-    keys[KeyType.STX] = "ctrl+b"
-    keys[KeyType.ETX] = "ctrl+c"
-    keys[KeyType.EOT] = "ctrl+d"
-    keys[KeyType.ENQ] = "ctrl+e"
-    keys[KeyType.ACK] = "ctrl+f"
-    keys[KeyType.BEL] = "ctrl+g"
-    keys[KeyType.BS] = "ctrl+h"
-    keys[KeyType.HT] = "tab"
-    keys[KeyType.LF] = "ctrl+j"
-    keys[KeyType.VT] = "ctrl+k"
-    keys[KeyType.FF] = "ctrl+l"
-    keys[KeyType.CR] = "enter"
-    keys[KeyType.SO] = "ctrl+n"
-    keys[KeyType.SI] = "ctrl+o"
-    keys[KeyType.DLE] = "ctrl+p"
-    keys[KeyType.DC1] = "ctrl+q"
-    keys[KeyType.DC2] = "ctrl+r"
-    keys[KeyType.DC3] = "ctrl+s"
-    keys[KeyType.DC4] = "ctrl+t"
-    keys[KeyType.NAK] = "ctrl+u"
-    keys[KeyType.SYN] = "ctrl+v"
-    keys[KeyType.ETB] = "ctrl+w"
-    keys[KeyType.CAN] = "ctrl+x"
-    keys[KeyType.EM] = "ctrl+y"
-    keys[KeyType.SUB] = "ctrl+z"
-    keys[KeyType.ESC] = "esc"
-    keys[KeyType.FS] = "ctrl+\\"
-    keys[KeyType.GS] = "ctrl+]"
-    keys[KeyType.RS] = "ctrl+^"
-    keys[KeyType.US] = "ctrl+_"
-    keys[KeyType.DEL] = "backspace"
-    keys[KeyType.Runes] = "runes"
-    keys[KeyType.Up] = "up"
-    keys[KeyType.Down] = "down"
-    keys[KeyType.Right] = "right"
-    keys[KeyType.Space] = " "
-    keys[KeyType.Left] = "left"
-    keys[KeyType.ShiftTab] = "shift+tab"
-    keys[KeyType.Home] = "home"
-    keys[KeyType.End] = "end"
-    keys[KeyType.CtrlHome] = "ctrl+home"
-    keys[KeyType.CtrlEnd] = "ctrl+end"
-    keys[KeyType.ShiftHome] = "shift+home"
-    keys[KeyType.ShiftEnd] = "shift+end"
-    keys[KeyType.CtrlShiftHome] = "ctrl+shift+home"
-    keys[KeyType.CtrlShiftEnd] = "ctrl+shift+end"
-    keys[KeyType.PgUp] = "pgup"
-    keys[KeyType.PgDown] = "pgdown"
-    keys[KeyType.CtrlPgUp] = "ctrl+pgup"
-    keys[KeyType.CtrlPgDown] = "ctrl+pgdown"
-    keys[KeyType.Delete] = "delete"
-    keys[KeyType.Insert] = "insert"
-    keys[KeyType.CtrlUp] = "ctrl+up"
-    keys[KeyType.CtrlDown] = "ctrl+down"
-    keys[KeyType.CtrlRight] = "ctrl+right"
-    keys[KeyType.CtrlLeft] = "ctrl+left"
-    keys[KeyType.ShiftUp] = "shift+up"
-    keys[KeyType.ShiftDown] = "shift+down"
-    keys[KeyType.ShiftRight] = "shift+right"
-    keys[KeyType.ShiftLeft] = "shift+left"
-    keys[KeyType.CtrlShiftUp] = "ctrl+shift+up"
-    keys[KeyType.CtrlShiftDown] = "ctrl+shift+down"
-    keys[KeyType.CtrlShiftLeft] = "ctrl+shift+left"
-    keys[KeyType.CtrlShiftRight] = "ctrl+shift+right"
-    keys[KeyType.F1] = "f1"
-    keys[KeyType.F2] = "f2"
-    keys[KeyType.F3] = "f3"
-    keys[KeyType.F4] = "f4"
-    keys[KeyType.F5] = "f5"
-    keys[KeyType.F6] = "f6"
-    keys[KeyType.F7] = "f7"
-    keys[KeyType.F8] = "f8"
-    keys[KeyType.F9] = "f9"
-    keys[KeyType.F10] = "f10"
-    keys[KeyType.F11] = "f11"
-    keys[KeyType.F12] = "f12"
-    keys[KeyType.F13] = "f13"
-    keys[KeyType.F14] = "f14"
-    keys[KeyType.F15] = "f15"
-    keys[KeyType.F16] = "f16"
-    keys[KeyType.F17] = "f17"
-    keys[KeyType.F18] = "f18"
-    keys[KeyType.F19] = "f19"
-    keys[KeyType.F20] = "f20"
-    return keys^
-
-
-alias KEY_NAMES = build_key_names()
+alias KEY_NAMES: Dict[KeyType, String] = {
+    KeyType.NUL: "ctrl+@",
+    KeyType.SOH: "ctrl+a",
+    KeyType.STX: "ctrl+b",
+    KeyType.ETX: "ctrl+c",
+    KeyType.EOT: "ctrl+d",
+    KeyType.ENQ: "ctrl+e",
+    KeyType.ACK: "ctrl+f",
+    KeyType.BEL: "ctrl+g",
+    KeyType.BS: "ctrl+h",
+    KeyType.HT: "tab",
+    KeyType.LF: "ctrl+j",
+    KeyType.VT: "ctrl+k",
+    KeyType.FF: "ctrl+l",
+    KeyType.CR: "enter",
+    KeyType.SO: "ctrl+n",
+    KeyType.SI: "ctrl+o",
+    KeyType.DLE: "ctrl+p",
+    KeyType.DC1: "ctrl+q",
+    KeyType.DC2: "ctrl+r",
+    KeyType.DC3: "ctrl+s",
+    KeyType.DC4: "ctrl+t",
+    KeyType.NAK: "ctrl+u",
+    KeyType.SYN: "ctrl+v",
+    KeyType.ETB: "ctrl+w",
+    KeyType.CAN: "ctrl+x",
+    KeyType.EM: "ctrl+y",
+    KeyType.SUB: "ctrl+z",
+    KeyType.ESC: "esc",
+    KeyType.FS: "ctrl+\\",
+    KeyType.GS: "ctrl+]",
+    KeyType.RS: "ctrl+^",
+    KeyType.US: "ctrl+_",
+    KeyType.DEL: "backspace",
+    KeyType.Runes: "runes",
+    KeyType.Up: "up",
+    KeyType.Down: "down",
+    KeyType.Right: "right",
+    KeyType.Space: " ",
+    KeyType.Left: "left",
+    KeyType.ShiftTab: "shift+tab",
+    KeyType.Home: "home",
+    KeyType.End: "end",
+    KeyType.CtrlHome: "ctrl+home",
+    KeyType.CtrlEnd: "ctrl+end",
+    KeyType.ShiftHome: "shift+home",
+    KeyType.ShiftEnd: "shift+end",
+    KeyType.CtrlShiftHome: "ctrl+shift+home",
+    KeyType.CtrlShiftEnd: "ctrl+shift+end",
+    KeyType.PgUp: "pgup",
+    KeyType.PgDown: "pgdown",
+    KeyType.CtrlPgUp: "ctrl+pgup",
+    KeyType.CtrlPgDown: "ctrl+pgdown",
+    KeyType.Delete: "delete",
+    KeyType.Insert: "insert",
+    KeyType.CtrlUp: "ctrl+up",
+    KeyType.CtrlDown: "ctrl+down",
+    KeyType.CtrlRight: "ctrl+right",
+    KeyType.CtrlLeft: "ctrl+left",
+    KeyType.ShiftUp: "shift+up",
+    KeyType.ShiftDown: "shift+down",
+    KeyType.ShiftRight: "shift+right",
+    KeyType.ShiftLeft: "shift+left",
+    KeyType.CtrlShiftUp: "ctrl+shift+up",
+    KeyType.CtrlShiftDown: "ctrl+shift+down",
+    KeyType.CtrlShiftLeft: "ctrl+shift+left",
+    KeyType.CtrlShiftRight: "ctrl+shift+right",
+    KeyType.F1: "f1",
+    KeyType.F2: "f2",
+    KeyType.F3: "f3",
+    KeyType.F4: "f4",
+    KeyType.F5: "f5",
+    KeyType.F6: "f6",
+    KeyType.F7: "f7",
+    KeyType.F8: "f8",
+    KeyType.F9: "f9",
+    KeyType.F10: "f10",
+    KeyType.F11: "f11",
+    KeyType.F12: "f12",
+    KeyType.F13: "f13",
+    KeyType.F14: "f14",
+    KeyType.F15: "f15",
+    KeyType.F16: "f16",
+    KeyType.F17: "f17",
+    KeyType.F18: "f18",
+    KeyType.F19: "f19",
+    KeyType.F20: "f20",
+}
 """Mappings for control keys and other special keys to human friendly string representations."""
 
 
-fn build_sequences() -> Dict[String, Key]:
-    """Mappings for escape sequences to key presses.
-
-    Control keys.
-
-    Returns:
-        A dictionary mapping escape sequences to `Key` objects.
-
-    #### Notes:
-    - https://en.wikipedia.org/wiki/C0_and_C1_control_codes
-    """
-    var keys = Dict[String, Key]()
-
-    # Arrow keys
-    keys["\x1b[A"] = Key(KeyType.Up)
-    keys["\x1b[B"] = Key(KeyType.Down)
-    keys["\x1b[C"] = Key(KeyType.Right)
-    keys["\x1b[D"] = Key(KeyType.Left)
-    keys["\x1b[1;2A"] = Key(KeyType.ShiftUp)
-    keys["\x1b[1;2B"] = Key(KeyType.ShiftDown)
-    keys["\x1b[1;2C"] = Key(KeyType.ShiftRight)
-    keys["\x1b[1;2D"] = Key(KeyType.ShiftLeft)
-    keys["\x1b[OA"] = Key(KeyType.ShiftUp)
-    keys["\x1b[OB"] = Key(KeyType.ShiftDown)
-    keys["\x1b[OC"] = Key(KeyType.ShiftRight)
-    keys["\x1b[OD"] = Key(KeyType.ShiftLeft)
-    keys["\x1b[a"] = Key(KeyType.ShiftUp)
-    keys["\x1b[b"] = Key(KeyType.ShiftDown)
-    keys["\x1b[c"] = Key(KeyType.ShiftRight)
-    keys["\x1b[d"] = Key(KeyType.ShiftLeft)
-    keys["\x1b[1;3A"] = Key(KeyType.Up, alt=True)
-    keys["\x1b[1;3B"] = Key(KeyType.Down, alt=True)
-    keys["\x1b[1;3C"] = Key(KeyType.Right, alt=True)
-    keys["\x1b[1;3D"] = Key(KeyType.Left, alt=True)
-    keys["\x1b[1;4A"] = Key(KeyType.ShiftUp, alt=True)
-    keys["\x1b[1;4B"] = Key(KeyType.ShiftDown, alt=True)
-    keys["\x1b[1;4C"] = Key(KeyType.ShiftRight, alt=True)
-    keys["\x1b[1;4D"] = Key(KeyType.ShiftLeft, alt=True)
-    keys["\x1b[1;5A"] = Key(KeyType.CtrlUp)
-    keys["\x1b[1;5B"] = Key(KeyType.CtrlDown)
-    keys["\x1b[1;5C"] = Key(KeyType.CtrlRight)
-    keys["\x1b[1;5D"] = Key(KeyType.CtrlLeft)
-    keys["\x1b[Oa"] = Key(KeyType.CtrlUp, alt=True)
-    keys["\x1b[Ob"] = Key(KeyType.CtrlDown, alt=True)
-    keys["\x1b[Oc"] = Key(KeyType.CtrlRight, alt=True)
-    keys["\x1b[Od"] = Key(KeyType.CtrlLeft, alt=True)
-    keys["\x1b[1;6A"] = Key(KeyType.CtrlShiftUp)
-    keys["\x1b[1;6B"] = Key(KeyType.CtrlShiftDown)
-    keys["\x1b[1;6C"] = Key(KeyType.CtrlShiftRight)
-    keys["\x1b[1;6D"] = Key(KeyType.CtrlShiftLeft)
-    keys["\x1b[1;7A"] = Key(KeyType.CtrlUp, alt=True)
-    keys["\x1b[1;7B"] = Key(KeyType.CtrlDown, alt=True)
-    keys["\x1b[1;7C"] = Key(KeyType.CtrlRight, alt=True)
-    keys["\x1b[1;7D"] = Key(KeyType.CtrlLeft, alt=True)
-    keys["\x1b[1;8A"] = Key(KeyType.CtrlShiftUp, alt=True)
-    keys["\x1b[1;8B"] = Key(KeyType.CtrlShiftDown, alt=True)
-    keys["\x1b[1;8C"] = Key(KeyType.CtrlShiftRight, alt=True)
-    keys["\x1b[1;8D"] = Key(KeyType.CtrlShiftLeft, alt=True)
-
+alias SEQUENCES: Dict[String, Key] = {
+    "\x1b[A": Key(KeyType.Up),
+    "\x1b[B": Key(KeyType.Down),
+    "\x1b[C": Key(KeyType.Right),
+    "\x1b[D": Key(KeyType.Left),
+    "\x1b[1;2A": Key(KeyType.ShiftUp),
+    "\x1b[1;2B": Key(KeyType.ShiftDown),
+    "\x1b[1;2C": Key(KeyType.ShiftRight),
+    "\x1b[1;2D": Key(KeyType.ShiftLeft),
+    "\x1b[OA": Key(KeyType.ShiftUp),
+    "\x1b[OB": Key(KeyType.ShiftDown),
+    "\x1b[OC": Key(KeyType.ShiftRight),
+    "\x1b[OD": Key(KeyType.ShiftLeft),
+    "\x1b[a": Key(KeyType.ShiftUp),
+    "\x1b[b": Key(KeyType.ShiftDown),
+    "\x1b[c": Key(KeyType.ShiftRight),
+    "\x1b[d": Key(KeyType.ShiftLeft),
+    "\x1b[1;3A": Key(KeyType.Up, alt=True),
+    "\x1b[1;3B": Key(KeyType.Down, alt=True),
+    "\x1b[1;3C": Key(KeyType.Right, alt=True),
+    "\x1b[1;3D": Key(KeyType.Left, alt=True),
+    "\x1b[1;4A": Key(KeyType.ShiftUp, alt=True),
+    "\x1b[1;4B": Key(KeyType.ShiftDown, alt=True),
+    "\x1b[1;4C": Key(KeyType.ShiftRight, alt=True),
+    "\x1b[1;4D": Key(KeyType.ShiftLeft, alt=True),
+    "\x1b[1;5A": Key(KeyType.CtrlUp),
+    "\x1b[1;5B": Key(KeyType.CtrlDown),
+    "\x1b[1;5C": Key(KeyType.CtrlRight),
+    "\x1b[1;5D": Key(KeyType.CtrlLeft),
+    "\x1b[Oa": Key(KeyType.CtrlUp, alt=True),
+    "\x1b[Ob": Key(KeyType.CtrlDown, alt=True),
+    "\x1b[Oc": Key(KeyType.CtrlRight, alt=True),
+    "\x1b[Od": Key(KeyType.CtrlLeft, alt=True),
+    "\x1b[1;6A": Key(KeyType.CtrlShiftUp),
+    "\x1b[1;6B": Key(KeyType.CtrlShiftDown),
+    "\x1b[1;6C": Key(KeyType.CtrlShiftRight),
+    "\x1b[1;6D": Key(KeyType.CtrlShiftLeft),
+    "\x1b[1;7A": Key(KeyType.CtrlUp, alt=True),
+    "\x1b[1;7B": Key(KeyType.CtrlDown, alt=True),
+    "\x1b[1;7C": Key(KeyType.CtrlRight, alt=True),
+    "\x1b[1;7D": Key(KeyType.CtrlLeft, alt=True),
+    "\x1b[1;8A": Key(KeyType.CtrlShiftUp, alt=True),
+    "\x1b[1;8B": Key(KeyType.CtrlShiftDown, alt=True),
+    "\x1b[1;8C": Key(KeyType.CtrlShiftRight, alt=True),
+    "\x1b[1;8D": Key(KeyType.CtrlShiftLeft, alt=True),
     # Misc. keys
-    keys["\x1b[Z"] = Key(KeyType.ShiftTab)
-    keys["\x1b[2~"] = Key(KeyType.Insert)
-    keys["\x1b[3~"] = Key(KeyType.Delete)
-    keys["\x1b[5~"] = Key(KeyType.PgUp)
-    keys["\x1b[6~"] = Key(KeyType.PgDown)
-    keys["\x1b[1~"] = Key(KeyType.Home)
-    keys["\x1b[H"] = Key(KeyType.Home)
-    keys["\x1b[1;3H"] = Key(KeyType.Home, alt=True)
-    keys["\x1b[1;5H"] = Key(KeyType.CtrlHome)
-    keys["\x1b[1;7H"] = Key(KeyType.CtrlHome, alt=True)
-    keys["\x1b[1;2H"] = Key(KeyType.ShiftHome)
-    keys["\x1b[1;4H"] = Key(KeyType.ShiftHome, alt=True)
-    keys["\x1b[1;6H"] = Key(KeyType.CtrlShiftHome)
-    keys["\x1b[1;8H"] = Key(KeyType.CtrlShiftHome, alt=True)
-    keys["\x1b[4~"] = Key(KeyType.End)
-    keys["\x1b[F"] = Key(KeyType.End)
-    keys["\x1b[1;3F"] = Key(KeyType.End, alt=True)
-    keys["\x1b[1;5F"] = Key(KeyType.CtrlEnd)
-    keys["\x1b[1;7F"] = Key(KeyType.CtrlEnd, alt=True)
-    keys["\x1b[1;2F"] = Key(KeyType.ShiftEnd)
-    keys["\x1b[1;4F"] = Key(KeyType.ShiftEnd, alt=True)
-    keys["\x1b[1;6F"] = Key(KeyType.CtrlShiftEnd)
-    keys["\x1b[1;8F"] = Key(KeyType.CtrlShiftEnd, alt=True)
-    keys["\x1b[7~"] = Key(KeyType.Home)
-    keys["\x1b[7^"] = Key(KeyType.CtrlHome)
-    keys["\x1b[7$"] = Key(KeyType.ShiftHome)
-    keys["\x1b[7@"] = Key(KeyType.CtrlShiftHome)
-    keys["\x1b[8~"] = Key(KeyType.End)
-    keys["\x1b[8^"] = Key(KeyType.CtrlEnd)
-    keys["\x1b[8$"] = Key(KeyType.ShiftEnd)
-    keys["\x1b[8@"] = Key(KeyType.CtrlShiftEnd)
-    keys["\x1b[2;3~"] = Key(KeyType.Insert, alt=True)
-    keys["\x1b[3;3~"] = Key(KeyType.Delete, alt=True)
-    keys["\x1b[5;3~"] = Key(KeyType.PgUp, alt=True)
-    keys["\x1b[6;3~"] = Key(KeyType.PgDown, alt=True)
-    keys["\x1b[1;5A"] = Key(KeyType.CtrlUp)
-    keys["\x1b[1;5B"] = Key(KeyType.CtrlDown)
-    keys["\x1b[1;5C"] = Key(KeyType.CtrlRight)
-    keys["\x1b[1;5D"] = Key(KeyType.CtrlLeft)
-    keys["\x1b[1;6A"] = Key(KeyType.CtrlShiftUp)
-    keys["\x1b[1;6B"] = Key(KeyType.CtrlShiftDown)
-    keys["\x1b[1;6C"] = Key(KeyType.CtrlShiftRight)
-    keys["\x1b[1;6D"] = Key(KeyType.CtrlShiftLeft)
-    keys["\x1b[1;7A"] = Key(KeyType.CtrlUp, alt=True)
-    keys["\x1b[1;7B"] = Key(KeyType.CtrlDown, alt=True)
-    keys["\x1b[1;7C"] = Key(KeyType.CtrlRight, alt=True)
-    keys["\x1b[1;7D"] = Key(KeyType.CtrlLeft, alt=True)
-    keys["\x1b[1;8A"] = Key(KeyType.CtrlShiftUp, alt=True)
-    keys["\x1b[1;8B"] = Key(KeyType.CtrlShiftDown, alt=True)
-    keys["\x1b[1;8C"] = Key(KeyType.CtrlShiftRight, alt=True)
-    keys["\x1b[1;8D"] = Key(KeyType.CtrlShiftLeft, alt=True)
-    keys["\x1b[Z"] = Key(KeyType.ShiftTab)
-    keys["\x1b[2~"] = Key(KeyType.Insert)
-    keys["\x1b[3;2~"] = Key(KeyType.Insert, alt=True)
-    keys["\x1b[3~"] = Key(KeyType.Delete)
-    keys["\x1b[3;3~"] = Key(KeyType.Delete, alt=True)
-    keys["\x1b[5~"] = Key(KeyType.PgUp)
-    keys["\x1b[5;3~"] = Key(KeyType.PgUp, alt=True)
-    keys["\x1b[5;5~"] = Key(KeyType.CtrlPgUp)
-    keys["\x1b[5^"] = Key(KeyType.CtrlPgUp)
-    keys["\x1b[5;7~"] = Key(KeyType.CtrlPgUp, alt=True)
-    keys["\x1b[6~"] = Key(KeyType.PgDown)
-    keys["\x1b[6;3~"] = Key(KeyType.PgDown, alt=True)
-    keys["\x1b[6;5~"] = Key(KeyType.CtrlPgDown)
-    keys["\x1b[6^"] = Key(KeyType.CtrlPgDown)
-    keys["\x1b[6;7~"] = Key(KeyType.CtrlPgDown, alt=True)
-    keys["\x1b[1~"] = Key(KeyType.Home)
-    keys["\x1b[H"] = Key(KeyType.Home)
-    keys["\x1b[1;3H"] = Key(KeyType.Home, alt=True)
-    keys["\x1b[1;5H"] = Key(KeyType.CtrlHome)
-    keys["\x1b[1;7H"] = Key(KeyType.CtrlHome, alt=True)
-    keys["\x1b[1;2H"] = Key(KeyType.ShiftHome)
-    keys["\x1b[1;4H"] = Key(KeyType.ShiftHome, alt=True)
-    keys["\x1b[1;6H"] = Key(KeyType.CtrlShiftHome)
-    keys["\x1b[1;8H"] = Key(KeyType.CtrlShiftHome, alt=True)
-    keys["\x1b[4~"] = Key(KeyType.End)
-    keys["\x1b[F"] = Key(KeyType.End)
-    keys["\x1b[1;3F"] = Key(KeyType.End, alt=True)
-    keys["\x1b[1;5F"] = Key(KeyType.CtrlEnd)
-    keys["\x1b[1;7F"] = Key(KeyType.CtrlEnd, alt=True)
-    keys["\x1b[1;2F"] = Key(KeyType.ShiftEnd)
-    keys["\x1b[1;4F"] = Key(KeyType.ShiftEnd, alt=True)
-    keys["\x1b[1;6F"] = Key(KeyType.CtrlShiftEnd)
-    keys["\x1b[1;8F"] = Key(KeyType.CtrlShiftEnd, alt=True)
-    keys["\x1b[7~"] = Key(KeyType.Home)
-    keys["\x1b[7^"] = Key(KeyType.CtrlHome)
-    keys["\x1b[7$"] = Key(KeyType.ShiftHome)
-    keys["\x1b[7@"] = Key(KeyType.CtrlShiftHome)
-    keys["\x1b[8~"] = Key(KeyType.End)
-    keys["\x1b[8^"] = Key(KeyType.CtrlEnd)
-    keys["\x1b[8$"] = Key(KeyType.ShiftEnd)
-    keys["\x1b[8@"] = Key(KeyType.CtrlShiftEnd)
-
+    "\x1b[Z": Key(KeyType.ShiftTab),
+    "\x1b[2~": Key(KeyType.Insert),
+    "\x1b[3~": Key(KeyType.Delete),
+    "\x1b[5~": Key(KeyType.PgUp),
+    "\x1b[6~": Key(KeyType.PgDown),
+    "\x1b[1~": Key(KeyType.Home),
+    "\x1b[H": Key(KeyType.Home),
+    "\x1b[1;3H": Key(KeyType.Home, alt=True),
+    "\x1b[1;5H": Key(KeyType.CtrlHome),
+    "\x1b[1;7H": Key(KeyType.CtrlHome, alt=True),
+    "\x1b[1;2H": Key(KeyType.ShiftHome),
+    "\x1b[1;4H": Key(KeyType.ShiftHome, alt=True),
+    "\x1b[1;6H": Key(KeyType.CtrlShiftHome),
+    "\x1b[1;8H": Key(KeyType.CtrlShiftHome, alt=True),
+    "\x1b[4~": Key(KeyType.End),
+    "\x1b[F": Key(KeyType.End),
+    "\x1b[1;3F": Key(KeyType.End, alt=True),
+    "\x1b[1;5F": Key(KeyType.CtrlEnd),
+    "\x1b[1;7F": Key(KeyType.CtrlEnd, alt=True),
+    "\x1b[1;2F": Key(KeyType.ShiftEnd),
+    "\x1b[1;4F": Key(KeyType.ShiftEnd, alt=True),
+    "\x1b[1;6F": Key(KeyType.CtrlShiftEnd),
+    "\x1b[1;8F": Key(KeyType.CtrlShiftEnd, alt=True),
+    "\x1b[7~": Key(KeyType.Home),
+    "\x1b[7^": Key(KeyType.CtrlHome),
+    "\x1b[7$": Key(KeyType.ShiftHome),
+    "\x1b[7@": Key(KeyType.CtrlShiftHome),
+    "\x1b[8~": Key(KeyType.End),
+    "\x1b[8^": Key(KeyType.CtrlEnd),
+    "\x1b[8$": Key(KeyType.ShiftEnd),
+    "\x1b[8@": Key(KeyType.CtrlShiftEnd),
+    "\x1b[2;3~": Key(KeyType.Insert, alt=True),
+    "\x1b[3;3~": Key(KeyType.Delete, alt=True),
+    "\x1b[5;3~": Key(KeyType.PgUp, alt=True),
+    "\x1b[6;3~": Key(KeyType.PgDown, alt=True),
+    "\x1b[1;5A": Key(KeyType.CtrlUp),
+    "\x1b[1;5B": Key(KeyType.CtrlDown),
+    "\x1b[1;5C": Key(KeyType.CtrlRight),
+    "\x1b[1;5D": Key(KeyType.CtrlLeft),
+    "\x1b[1;6A": Key(KeyType.CtrlShiftUp),
+    "\x1b[1;6B": Key(KeyType.CtrlShiftDown),
+    "\x1b[1;6C": Key(KeyType.CtrlShiftRight),
+    "\x1b[1;6D": Key(KeyType.CtrlShiftLeft),
+    "\x1b[1;7A": Key(KeyType.CtrlUp, alt=True),
+    "\x1b[1;7B": Key(KeyType.CtrlDown, alt=True),
+    "\x1b[1;7C": Key(KeyType.CtrlRight, alt=True),
+    "\x1b[1;7D": Key(KeyType.CtrlLeft, alt=True),
+    "\x1b[1;8A": Key(KeyType.CtrlShiftUp, alt=True),
+    "\x1b[1;8B": Key(KeyType.CtrlShiftDown, alt=True),
+    "\x1b[1;8C": Key(KeyType.CtrlShiftRight, alt=True),
+    "\x1b[1;8D": Key(KeyType.CtrlShiftLeft, alt=True),
+    "\x1b[Z": Key(KeyType.ShiftTab),
+    "\x1b[2~": Key(KeyType.Insert),
+    "\x1b[3;2~": Key(KeyType.Insert, alt=True),
+    "\x1b[3~": Key(KeyType.Delete),
+    "\x1b[3;3~": Key(KeyType.Delete, alt=True),
+    "\x1b[5~": Key(KeyType.PgUp),
+    "\x1b[5;3~": Key(KeyType.PgUp, alt=True),
+    "\x1b[5;5~": Key(KeyType.CtrlPgUp),
+    "\x1b[5^": Key(KeyType.CtrlPgUp),
+    "\x1b[5;7~": Key(KeyType.CtrlPgUp, alt=True),
+    "\x1b[6~": Key(KeyType.PgDown),
+    "\x1b[6;3~": Key(KeyType.PgDown, alt=True),
+    "\x1b[6;5~": Key(KeyType.CtrlPgDown),
+    "\x1b[6^": Key(KeyType.CtrlPgDown),
+    "\x1b[6;7~": Key(KeyType.CtrlPgDown, alt=True),
+    "\x1b[1~": Key(KeyType.Home),
+    "\x1b[H": Key(KeyType.Home),
+    "\x1b[1;3H": Key(KeyType.Home, alt=True),
+    "\x1b[1;5H": Key(KeyType.CtrlHome),
+    "\x1b[1;7H": Key(KeyType.CtrlHome, alt=True),
+    "\x1b[1;2H": Key(KeyType.ShiftHome),
+    "\x1b[1;4H": Key(KeyType.ShiftHome, alt=True),
+    "\x1b[1;6H": Key(KeyType.CtrlShiftHome),
+    "\x1b[1;8H": Key(KeyType.CtrlShiftHome, alt=True),
+    "\x1b[4~": Key(KeyType.End),
+    "\x1b[F": Key(KeyType.End),
+    "\x1b[1;3F": Key(KeyType.End, alt=True),
+    "\x1b[1;5F": Key(KeyType.CtrlEnd),
+    "\x1b[1;7F": Key(KeyType.CtrlEnd, alt=True),
+    "\x1b[1;2F": Key(KeyType.ShiftEnd),
+    "\x1b[1;4F": Key(KeyType.ShiftEnd, alt=True),
+    "\x1b[1;6F": Key(KeyType.CtrlShiftEnd),
+    "\x1b[1;8F": Key(KeyType.CtrlShiftEnd, alt=True),
+    "\x1b[7~": Key(KeyType.Home),
+    "\x1b[7^": Key(KeyType.CtrlHome),
+    "\x1b[7$": Key(KeyType.ShiftHome),
+    "\x1b[7@": Key(KeyType.CtrlShiftHome),
+    "\x1b[8~": Key(KeyType.End),
+    "\x1b[8^": Key(KeyType.CtrlEnd),
+    "\x1b[8$": Key(KeyType.ShiftEnd),
+    "\x1b[8@": Key(KeyType.CtrlShiftEnd),
     # Function keys, Linux console
-    keys["\x1b[[A"] = Key(KeyType.F1)  # linux console
-    keys["\x1b[[B"] = Key(KeyType.F2)  # linux console
-    keys["\x1b[[C"] = Key(KeyType.F3)  # linux console
-    keys["\x1b[[D"] = Key(KeyType.F4)  # linux console
-    keys["\x1b[[E"] = Key(KeyType.F5)  # linux console
-
+    "\x1b[[A": Key(KeyType.F1),  # linux console
+    "\x1b[[B": Key(KeyType.F2),  # linux console
+    "\x1b[[C": Key(KeyType.F3),  # linux console
+    "\x1b[[D": Key(KeyType.F4),  # linux console
+    "\x1b[[E": Key(KeyType.F5),  # linux console
     # Function keys, X11
-    keys["\x1bOP"] = Key(KeyType.F1)  # vt100, xterm
-    keys["\x1bOQ"] = Key(KeyType.F2)  # vt100, xterm
-    keys["\x1bOR"] = Key(KeyType.F3)  # vt100, xterm
-    keys["\x1bOS"] = Key(KeyType.F4)  # vt100, xterm
-
-    keys["\x1b[1;3P"] = Key(KeyType.F1, alt=True)  # vt100, xterm
-    keys["\x1b[1;3Q"] = Key(KeyType.F2, alt=True)  # vt100, xterm
-    keys["\x1b[1;3R"] = Key(KeyType.F3, alt=True)  # vt100, xterm
-    keys["\x1b[1;3S"] = Key(KeyType.F4, alt=True)  # vt100, xterm
-
-    keys["\x1b[11~"] = Key(KeyType.F1)  # urxvt
-    keys["\x1b[12~"] = Key(KeyType.F2)  # urxvt
-    keys["\x1b[13~"] = Key(KeyType.F3)  # urxvt
-    keys["\x1b[14~"] = Key(KeyType.F4)  # urxvt
-
-    keys["\x1b[15~"] = Key(KeyType.F5)  # vt100, xterm, also urxvt
-
-    keys["\x1b[15;3~"] = Key(KeyType.F5, alt=True)  # vt100, xterm, also urxvt
-
-    keys["\x1b[17~"] = Key(KeyType.F6)  # vt100, xterm, also urxvt
-    keys["\x1b[18~"] = Key(KeyType.F7)  # vt100, xterm, also urxvt
-    keys["\x1b[19~"] = Key(KeyType.F8)  # vt100, xterm, also urxvt
-    keys["\x1b[20~"] = Key(KeyType.F9)  # vt100, xterm, also urxvt
-    keys["\x1b[21~"] = Key(KeyType.F10)  # vt100, xterm, also urxvt
-
-    keys["\x1b[17;3~"] = Key(KeyType.F6, alt=True)  # vt100, xterm
-    keys["\x1b[18;3~"] = Key(KeyType.F7, alt=True)  # vt100, xterm
-    keys["\x1b[19;3~"] = Key(KeyType.F8, alt=True)  # vt100, xterm
-    keys["\x1b[20;3~"] = Key(KeyType.F9, alt=True)  # vt100, xterm
-    keys["\x1b[21;3~"] = Key(KeyType.F10, alt=True)  # vt100, xterm
-
-    keys["\x1b[23~"] = Key(KeyType.F11)  # vt100, xterm, also urxvt
-    keys["\x1b[24~"] = Key(KeyType.F12)  # vt100, xterm, also urxvt
-
-    keys["\x1b[23;3~"] = Key(KeyType.F11, alt=True)  # vt100, xterm
-    keys["\x1b[24;3~"] = Key(KeyType.F12, alt=True)  # vt100, xterm
-
-    keys["\x1b[1;2P"] = Key(KeyType.F13)
-    keys["\x1b[1;2Q"] = Key(KeyType.F14)
-
-    keys["\x1b[25~"] = Key(KeyType.F13)  # vt100, xterm, also urxvt
-    keys["\x1b[26~"] = Key(KeyType.F14)  # vt100, xterm, also urxvt
-
-    keys["\x1b[25;3~"] = Key(KeyType.F13, alt=True)  # vt100, xterm
-    keys["\x1b[26;3~"] = Key(KeyType.F14, alt=True)  # vt100, xterm
-
-    keys["\x1b[1;2R"] = Key(KeyType.F15)
-    keys["\x1b[1;2S"] = Key(KeyType.F16)
-
-    keys["\x1b[28~"] = Key(KeyType.F15)  # vt100, xterm, also urxvt
-    keys["\x1b[29~"] = Key(KeyType.F16)  # vt100, xterm, also urxvt
-
-    keys["\x1b[28;3~"] = Key(KeyType.F15, alt=True)  # vt100, xterm
-    keys["\x1b[29;3~"] = Key(KeyType.F16, alt=True)  # vt100, xterm
-
-    keys["\x1b[15;2~"] = Key(KeyType.F17)
-    keys["\x1b[17;2~"] = Key(KeyType.F18)
-    keys["\x1b[18;2~"] = Key(KeyType.F19)
-    keys["\x1b[19;2~"] = Key(KeyType.F20)
-
-    keys["\x1b[31~"] = Key(KeyType.F17)
-    keys["\x1b[32~"] = Key(KeyType.F18)
-    keys["\x1b[33~"] = Key(KeyType.F19)
-    keys["\x1b[34~"] = Key(KeyType.F20)
-
+    "\x1bOP": Key(KeyType.F1),  # vt100, xterm
+    "\x1bOQ": Key(KeyType.F2),  # vt100, xterm
+    "\x1bOR": Key(KeyType.F3),  # vt100, xterm
+    "\x1bOS": Key(KeyType.F4),  # vt100, xterm
+    "\x1b[1;3P": Key(KeyType.F1, alt=True),  # vt100, xterm
+    "\x1b[1;3Q": Key(KeyType.F2, alt=True),  # vt100, xterm
+    "\x1b[1;3R": Key(KeyType.F3, alt=True),  # vt100, xterm
+    "\x1b[1;3S": Key(KeyType.F4, alt=True),  # vt100, xterm
+    "\x1b[11~": Key(KeyType.F1),  # urxvt
+    "\x1b[12~": Key(KeyType.F2),  # urxvt
+    "\x1b[13~": Key(KeyType.F3),  # urxvt
+    "\x1b[14~": Key(KeyType.F4),  # urxvt
+    "\x1b[15~": Key(KeyType.F5),  # vt100, xterm, also urxvt
+    "\x1b[15;3~": Key(KeyType.F5, alt=True),  # vt100, xterm, also urxvt
+    "\x1b[17~": Key(KeyType.F6),  # vt100, xterm, also urxvt
+    "\x1b[18~": Key(KeyType.F7),  # vt100, xterm, also urxvt
+    "\x1b[19~": Key(KeyType.F8),  # vt100, xterm, also urxvt
+    "\x1b[20~": Key(KeyType.F9),  # vt100, xterm, also urxvt
+    "\x1b[21~": Key(KeyType.F10),  # vt100, xterm, also urxvt
+    "\x1b[17;3~": Key(KeyType.F6, alt=True),  # vt100, xterm
+    "\x1b[18;3~": Key(KeyType.F7, alt=True),  # vt100, xterm
+    "\x1b[19;3~": Key(KeyType.F8, alt=True),  # vt100, xterm
+    "\x1b[20;3~": Key(KeyType.F9, alt=True),  # vt100, xterm
+    "\x1b[21;3~": Key(KeyType.F10, alt=True),  # vt100, xterm
+    "\x1b[23~": Key(KeyType.F11),  # vt100, xterm, also urxvt
+    "\x1b[24~": Key(KeyType.F12),  # vt100, xterm, also urxvt
+    "\x1b[23;3~": Key(KeyType.F11, alt=True),  # vt100, xterm
+    "\x1b[24;3~": Key(KeyType.F12, alt=True),  # vt100, xterm
+    "\x1b[1;2P": Key(KeyType.F13),
+    "\x1b[1;2Q": Key(KeyType.F14),
+    "\x1b[25~": Key(KeyType.F13),  # vt100, xterm, also urxvt
+    "\x1b[26~": Key(KeyType.F14),  # vt100, xterm, also urxvt
+    "\x1b[25;3~": Key(KeyType.F13, alt=True),  # vt100, xterm
+    "\x1b[26;3~": Key(KeyType.F14, alt=True),  # vt100, xterm
+    "\x1b[1;2R": Key(KeyType.F15),
+    "\x1b[1;2S": Key(KeyType.F16),
+    "\x1b[28~": Key(KeyType.F15),  # vt100, xterm, also urxvt
+    "\x1b[29~": Key(KeyType.F16),  # vt100, xterm, also urxvt
+    "\x1b[28;3~": Key(KeyType.F15, alt=True),  # vt100, xterm
+    "\x1b[29;3~": Key(KeyType.F16, alt=True),  # vt100, xterm
+    "\x1b[15;2~": Key(KeyType.F17),
+    "\x1b[17;2~": Key(KeyType.F18),
+    "\x1b[18;2~": Key(KeyType.F19),
+    "\x1b[19;2~": Key(KeyType.F20),
+    "\x1b[31~": Key(KeyType.F17),
+    "\x1b[32~": Key(KeyType.F18),
+    "\x1b[33~": Key(KeyType.F19),
+    "\x1b[34~": Key(KeyType.F20),
     # Powershell sequences.
-    keys["\x1bOA"] = Key(KeyType.Up, alt=False)
-    keys["\x1bOB"] = Key(KeyType.Down, alt=False)
-    keys["\x1bOC"] = Key(KeyType.Right, alt=False)
-    keys["\x1bOD"] = Key(KeyType.Left, alt=False)
-    return keys
-
-
-alias SEQUENCES = build_sequences()
+    "\x1bOA": Key(KeyType.Up, alt=False),
+    "\x1bOB": Key(KeyType.Down, alt=False),
+    "\x1bOC": Key(KeyType.Right, alt=False),
+    "\x1bOD": Key(KeyType.Left, alt=False),
+}
 """Mappings for escape sequences to key presses."""

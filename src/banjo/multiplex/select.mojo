@@ -1,11 +1,10 @@
 from sys.ffi import external_call, os_is_windows, os_is_macos
-from collections import Optional, Set
+from collections import Optional, Set, BitSet
 from sys import exit, stdin
 
 from banjo.termios.c import c_void, c_int
 import banjo.termios.c
 from banjo.multiplex.selector import Selector
-from banjo._bitset import BitSet
 
 
 @value
