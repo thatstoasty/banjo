@@ -1,21 +1,13 @@
 from banjo.terminal.cursor import clear_screen, move_cursor
 
 
-@value
+@fieldwise_init
 @register_passable("trivial")
-struct Renderer:
+struct Renderer(Copyable, ExplicitlyCopyable, Movable):
     """A simple renderer that prints to the terminal."""
 
     var framerate: Float64
-    """The framerate of the renderer in terms of `1 / fps`."""
-
-    fn __init__(out self, fps: Float64 = 30.0):
-        """Initializes the renderer with the given framerate.
-
-        Args:
-            fps: The framerate of the renderer in frames per second.
-        """
-        self.framerate = 1.0 / fps
+    """The framerate of the renderer in frames per second."""
 
     fn write(self, input: String) -> None:
         """Writes the given input to the terminal.

@@ -39,7 +39,7 @@ async fn view(tui: TUI) -> None:
         if tui.done:
             break
         tui.renderer.write(tui.model.view())
-        sleep(tui.renderer.framerate)
+        sleep(1 / tui.renderer.framerate)
 
 
 fn handle_msg(mut tui: TUI, msg: Msg) -> None:
@@ -97,7 +97,7 @@ struct TUI[T: Model]:
     fn __init__(
         out self,
         owned model: T,
-        renderer: Renderer = Renderer(),
+        renderer: Renderer = Renderer(24),
     ):
         self.model = model^
         self.renderer = renderer

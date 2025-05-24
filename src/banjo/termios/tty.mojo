@@ -57,8 +57,8 @@ fn cfmakeraw(mut mode: c.Termios):
     # Case B: MIN>0, TIME=0
     # A pending read shall block until MIN (here 1) bytes are received,
     # or a signal is received.
-    mode.c_cc[c.VMIN] = 1
-    mode.c_cc[c.VTIME] = 0
+    mode.c_cc[SpecialCharacter.VMIN.value] = 1
+    mode.c_cc[SpecialCharacter.VTIME.value] = 0
 
 
 fn cfmakecbreak(mut mode: c.Termios):

@@ -147,6 +147,7 @@ fn stdin_select(timeout: Optional[Int] = None) raises -> Int:
     return 0
 
 
+@fieldwise_init
 struct SelectSelector(Movable, Selector):
     var readers: Set[Int]
     var writers: Set[Int]
@@ -156,11 +157,6 @@ struct SelectSelector(Movable, Selector):
         self.readers = Set[Int]()
         self.writers = Set[Int]()
         self._highest_fd = 0
-
-    fn __moveinit__(out self, owned other: SelectSelector):
-        self.readers = other.readers^
-        self.writers = other.writers^
-        self._highest_fd = other._highest_fd
 
     fn register(mut self, fd: Int, events: Int) raises -> None:
         """Register a file object.

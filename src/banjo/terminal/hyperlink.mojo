@@ -1,4 +1,4 @@
-from mist.style import OSC, ST
+from banjo.terminal.sgr import OSC, ST
 
 
 fn hyperlink(link: StringSlice, name: StringSlice) -> String:
