@@ -1,6 +1,6 @@
-# from termios import tcgetattr, Termios, STDIN
-# import testing
+import testing
 
 
-# # def test_get_tty_attributes():
-# #     testing.assert_equal(str(tcgetattr(STDIN)), str(Termios()))
+def test_dummy() -> None:
+    """A dummy test to ensure the test file is valid."""
+    testing.assert_equal(1, 1)
