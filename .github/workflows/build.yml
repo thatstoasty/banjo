@@ -30,7 +30,7 @@ jobs:
 
       - uses: prefix-dev/setup-pixi@v0.8.10
         with:
-          pixi-version: v0.47.0
+          pixi-version: v0.59.0
 
       - name: Build package for target platform
         env:
@@ -40,6 +40,5 @@ jobs:
 
         run: |
           # Build and publish
-          pixi run build
           pixi auth login prefix.dev --token "$PREFIX_API_KEY"
-          pixi run publish mojo-community
+          pixi run build_and_publish

@@ -1,5 +1,5 @@
-from utils.variant import Variant
 from banjo.key_msg import KeyMsg
+from utils.variant import Variant
 
 
 @fieldwise_init
@@ -120,11 +120,11 @@ struct GeneralMsg(Copyable, Movable, Writable):
 
 
 @fieldwise_init
-struct Msg(Copyable, Movable, Writable):
+struct Msg(Copyable, ImplicitlyCopyable, Movable, Writable):
     """A message that can be sent to the terminal. It can represent various types of messages such as exit, key, focus, blur, unknown input byte, general messages, or no message.
     """
 
-    alias _type = Variant[ExitMsg, KeyMsg, FocusMsg, BlurMsg, UnknownInputByteMsg, GeneralMsg, NoMsg]
+    comptime _type = Variant[ExitMsg, KeyMsg, FocusMsg, BlurMsg, UnknownInputByteMsg, GeneralMsg, NoMsg]
     var value: Self._type
     """Internal value representing the message. It can be one of the following types: ExitMsg, KeyMsg, FocusMsg, BlurMsg, UnknownInputByteMsg, GeneralMsg, or NoMsg."""
 
@@ -144,7 +144,7 @@ struct Msg(Copyable, Movable, Writable):
         Args:
             value: The `KeyMsg` to initialize the message with.
         """
-        self.value = value
+        self.value = value.copy()
 
     @implicit
     fn __init__(out self, value: FocusMsg):
@@ -215,7 +215,7 @@ struct Msg(Copyable, Movable, Writable):
         """
         return self.value.isa[T]()
 
-    fn __getitem__[T: Movable & Copyable](ref self) -> ref [__origin_of(self.value)] T:
+    fn __getitem__[T: Movable & Copyable](ref self) -> ref [origin_of(self.value)] T:
         """Gets the value of the message as type T.
 
         Parameters:

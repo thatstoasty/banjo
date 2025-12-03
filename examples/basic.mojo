@@ -1,17 +1,18 @@
-import banjo
-from banjo.program import TUI, Model, Cmd
-from banjo.msg import exit_msg, GeneralMsg, Msg, ExitMsg, KeyMsg
 from banjo.key import KeyType
+from banjo.msg import ExitMsg, GeneralMsg, KeyMsg, Msg, exit_msg
+from banjo.program import TUI, Cmd, Model
 from banjo.renderer import Renderer
 
+import banjo
 
-@value
+
+@fieldwise_init
 @register_passable("trivial")
 struct State(Writable, Stringable):
     var value: UInt8
-    alias START = Self(0)
-    alias MENU = Self(1)
-    alias END = Self(2)
+    comptime START = Self(0)
+    comptime MENU = Self(1)
+    comptime END = Self(2)
 
     fn __str__(self) -> String:
         if self == State.START:
@@ -47,7 +48,7 @@ fn change_state_to_end() -> Msg:
     return Msg(GeneralMsg("StateMsg=State.END"))
 
 
-@value
+@fieldwise_init
 struct BaseModel(Model):
     var last_key: String
     var index: Int

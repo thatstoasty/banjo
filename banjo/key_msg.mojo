@@ -1,12 +1,14 @@
 from collections import InlineArray
 from sys import stdin
+from sys.ffi import c_int, c_size_t, external_call
+
 import mist.termios.c
-from banjo.msg import Msg, FocusMsg, BlurMsg, UnknownInputByteMsg, NoMsg
-from banjo.key import Key, KeyType, SEQUENCES
+from banjo.key import SEQUENCES, Key, KeyType
+from banjo.msg import BlurMsg, FocusMsg, Msg, NoMsg, UnknownInputByteMsg
 
 
-@value
-struct KeyMsg(Copyable, ExplicitlyCopyable, Movable, Stringable, Writable):
+@fieldwise_init
+struct KeyMsg(Copyable, Movable, Stringable, Writable):
     """Contains information about a keypress. KeyMsgs are always sent to
     the program's update function. There are a couple general patterns you could
     use to check for keypresses.
@@ -101,7 +103,7 @@ fn bytes_equal(lhs: Span[Byte], rhs: Span[Byte]) -> Bool:
     return True
 
 
-fn detect_report_focus[origin: ImmutableOrigin](input: Span[Byte, origin]) -> (Bool, Int, Msg):
+fn detect_report_focus[origin: ImmutOrigin](input: Span[Byte, origin]) -> Tuple[Bool, Int, Msg]:
     """Detects focus and blur events in the input buffer.
 
     Parameters:
@@ -123,7 +125,7 @@ fn detect_report_focus[origin: ImmutableOrigin](input: Span[Byte, origin]) -> (B
     return False, 0, Msg(NoMsg())
 
 
-fn detect_bracketed_paste[origin: ImmutableOrigin](input: Span[Byte, origin]) -> (Bool, Int, Msg):
+fn detect_bracketed_paste[origin: ImmutOrigin](input: Span[Byte, origin]) -> Tuple[Bool, Int, Msg]:
     """Detects an input pasted while bracketed
     paste mode was enabled.
 
@@ -145,8 +147,8 @@ fn detect_bracketed_paste[origin: ImmutableOrigin](input: Span[Byte, origin]) ->
     """
 
     # Detect the start sequence.
-    alias bp_start = "\x1b[200~"
-    alias bp_start_length = len(bp_start)
+    comptime bp_start = "\x1b[200~"
+    comptime bp_start_length = len(bp_start)
 
     # If the input is shorter than the start sequence, or if the
     # start sequence is not at the beginning of the input, then
@@ -159,7 +161,7 @@ fn detect_bracketed_paste[origin: ImmutableOrigin](input: Span[Byte, origin]) ->
 
     # If we saw the start sequence, then we must have an end sequence
     # as well. Find it.
-    alias bp_end = "\x1b[201~"
+    comptime bp_end = "\x1b[201~"
     var idx = StringSlice(unsafe_from_utf8=remaining_input).find(bp_end)
     if idx == -1:
         # We have encountered the end of the input buffer without seeing
@@ -180,7 +182,7 @@ fn detect_bracketed_paste[origin: ImmutableOrigin](input: Span[Byte, origin]) ->
     # 	paste = paste[w:]
 
     var input_len = bp_start_length + idx + len(bp_end)
-    return True, input_len, Msg(KeyMsg(k))
+    return True, input_len, Msg(KeyMsg(k^))
 
 
 fn build_escape_sequences() -> Dict[String, Key]:
@@ -193,12 +195,12 @@ fn build_escape_sequences() -> Dict[String, Key]:
         A dictionary mapping escape sequences to Key objects.
     """
     var s = Dict[String, Key]()
-    for pair in SEQUENCES.items():
-        var key = pair.value
-        s[pair.key] = key
+    for pair in materialize[SEQUENCES]().items():
+        var key = pair.value.copy()
+        s[pair.key] = key.copy()
         if not key.alt:
             key.alt = True
-            s["\x1b" + pair.key] = key
+            s["\x1b" + pair.key] = key^
 
     # start at KeyType.NUL.value + 1 (1) to skip NUL
     var i = KeyType.NUL.value + 1
@@ -224,7 +226,7 @@ fn build_escape_sequences() -> Dict[String, Key]:
     return s^
 
 
-alias ESCAPE_SEQUENCES = build_escape_sequences()
+comptime ESCAPE_SEQUENCES = build_escape_sequences()
 
 
 fn build_sequence_lengths() -> List[Int]:
@@ -238,9 +240,9 @@ fn build_sequence_lengths() -> List[Int]:
         A list of the lengths of the escape sequences in
         ESCAPE_SEQUENCES, sorted in descending order.
     """
-    alias ext_length = len(ESCAPE_SEQUENCES)
+    comptime ext_length = len(ESCAPE_SEQUENCES)
     var sizes = List[Int](capacity=ext_length)
-    for ref seq in ESCAPE_SEQUENCES.keys():
+    for ref seq in materialize[ESCAPE_SEQUENCES]().keys():
         sizes.append(len(seq))
 
     var lsize = List[Int](length=len(sizes), fill=0)
@@ -252,12 +254,12 @@ fn build_sequence_lengths() -> List[Int]:
     return lsize^
 
 
-alias SEQUENCE_LENGTHS = build_sequence_lengths()
+comptime SEQUENCE_LENGTHS = build_sequence_lengths()
 
 
 # detect_sequence uses a longest prefix match over the input
 # sequence and a hash map.
-fn detect_sequence[origin: ImmutableOrigin](input: Span[Byte, origin]) -> (Bool, Int, Msg):
+fn detect_sequence[origin: ImmutOrigin](input: Span[Byte, origin]) -> Tuple[Bool, Int, Msg]:
     """Detects an escape sequence in the input buffer.
 
     Uses a longest prefix match over the input sequence
@@ -276,14 +278,14 @@ fn detect_sequence[origin: ImmutableOrigin](input: Span[Byte, origin]) -> (Bool,
         a Msg containing the escape sequence. If no escape sequence
         was found, the length will be 0 and the Msg will be a `NoMsg`.
     """
-    for size in SEQUENCE_LENGTHS:
+    for size in materialize[SEQUENCE_LENGTHS]():
         if size > len(input):
             continue
 
         var prefix = input[:size]
         try:
-            key = ESCAPE_SEQUENCES[String(StringSlice(unsafe_from_utf8=prefix))]
-            return True, size, Msg(KeyMsg(key))
+            key = materialize[ESCAPE_SEQUENCES]()[String(bytes=prefix)].copy()
+            return True, size, Msg(KeyMsg(key^))
         except:
             continue
 
@@ -296,7 +298,7 @@ fn detect_sequence[origin: ImmutableOrigin](input: Span[Byte, origin]) -> (Bool,
     return False, 0, Msg(NoMsg())
 
 
-fn detect_msg[origin: ImmutableOrigin](buf: Span[Byte, origin]) -> (Int, Msg):
+fn detect_msg[origin: ImmutOrigin](buf: Span[Byte, origin]) -> Tuple[Int, Msg]:
     """Detects a message in the input buffer.
 
     This function detects various types of messages, such as key presses,
@@ -315,7 +317,7 @@ fn detect_msg[origin: ImmutableOrigin](buf: Span[Byte, origin]) -> (Int, Msg):
     """
     # Detect mouse events.
     # X10 mouse events have a length of 6 bytes
-    # alias mouseEventX10Len = 6
+    # comptime mouseEventX10Len = 6
     # if len(b) >= mouseEventX10Len and b[0] == '\x1b' and b[1] == '[':
     # 	switch b[2]:
     # 	case 'M':
@@ -401,7 +403,7 @@ fn detect_msg[origin: ImmutableOrigin](buf: Span[Byte, origin]) -> (Int, Msg):
         if len(buf[text_start:i]) == 1 and k.text[0] == " ":
             k.type = KeyType.Space
 
-        return i, Msg(KeyMsg(k))
+        return i, Msg(KeyMsg(k^))
 
     # We didn't find an escape sequence, nor a valid rune. Was this a
     # lone escape character at the end of the input?
@@ -414,6 +416,30 @@ fn detect_msg[origin: ImmutableOrigin](buf: Span[Byte, origin]) -> (Int, Msg):
     return 1, Msg(UnknownInputByteMsg(buf[0]))
 
 
+fn read(fd: c_int, buf: MutUnsafePointer[NoneType], size: c_size_t) -> c_int:
+    """Libc POSIX `read` function.
+
+    Read `size` bytes from file descriptor `fd` into the buffer `buf`.
+
+    Args:
+        fd: A File Descriptor.
+        buf: A pointer to a buffer to store the read data.
+        size: The number of bytes to read.
+
+    Returns:
+        The number of bytes read or -1 in case of failure.
+
+    #### C Function:
+    ```c
+    ssize_t read(int fildes, void *buf, size_t nbyte);
+    ```
+
+    #### Notes:
+    Reference: https://man7.org/linux/man-pages/man3/read.3p.html.
+    """
+    return external_call["read", c_int, type_of(fd), type_of(buf), type_of(size)](fd, buf, size)
+
+
 fn read_events() -> Msg:
     """Reads a single event from stdin. Read is normally blocking, but the terminal
     is set to non-blocking mode, so this will return immediately if there is no
@@ -423,12 +449,12 @@ fn read_events() -> Msg:
         A Msg containing the event read from stdin. This will be a KeyMsg if
         a key was pressed, or a NoMsg if there was no data to read.
     """
-    alias COUNT_TO_READ = 32
+    comptime COUNT_TO_READ = 32
 
     # We use a stack allocation to avoid heap allocations.
     # We don't need to free stack allocated pointers, I guess?
     # Freeing it works when its a heap allocated pointer, but not stack allocated.
     var buffer = InlineArray[Byte, COUNT_TO_READ](uninitialized=True)
-    _ = c.read(stdin.value, buffer.unsafe_ptr(), COUNT_TO_READ)
+    _ = read(stdin.value, buffer.unsafe_ptr().bitcast[NoneType](), COUNT_TO_READ)
     _, msg = detect_msg(Span(buffer).get_immutable())
     return msg^

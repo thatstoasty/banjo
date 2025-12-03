@@ -1,9 +1,9 @@
-from sys.ffi import os_is_windows
+from hashlib import Hasher
+from sys.ffi import CompilationTarget
 
 
-@value
 @register_passable("trivial")
-struct KeyType(Copyable, KeyElement, Movable, Stringable):
+struct KeyType(ImplicitlyCopyable, KeyElement, Stringable, Writable):
     """Indicates the key pressed, such as `KeyEnter` or `KeyBreak` or `KeyCtrlC`.
     All other keys will be type `KeyRunes`. To get the rune value, check the Rune
     method on a `Key` struct, or use the `String(Key)` method.
@@ -23,169 +23,169 @@ struct KeyType(Copyable, KeyElement, Movable, Stringable):
 
     var value: Int
     """The integer value representing the key type."""
-    alias NUL: KeyType = 0
+    comptime NUL: KeyType = 0
     """null, \\0"""
-    alias SOH: KeyType = 1
+    comptime SOH: KeyType = 1
     """start of heading."""
-    alias STX: KeyType = 2
+    comptime STX: KeyType = 2
     """start of text."""
-    alias ETX: KeyType = 3
+    comptime ETX: KeyType = 3
     """break, ctrl+c."""
-    alias EOT: KeyType = 4
+    comptime EOT: KeyType = 4
     """end of transmission."""
-    alias ENQ: KeyType = 5
+    comptime ENQ: KeyType = 5
     """enquiry."""
-    alias ACK: KeyType = 6
+    comptime ACK: KeyType = 6
     """acknowledge."""
-    alias BEL: KeyType = 7
+    comptime BEL: KeyType = 7
     """bell, \\a"""
-    alias BS: KeyType = 8
+    comptime BS: KeyType = 8
     """backspace."""
-    alias HT: KeyType = 9
+    comptime HT: KeyType = 9
     """horizontal tabulation, \\t."""
-    alias LF: KeyType = 10
+    comptime LF: KeyType = 10
     """line feed, \\n."""
-    alias VT: KeyType = 11
+    comptime VT: KeyType = 11
     """vertical tabulation, \\v."""
-    alias FF: KeyType = 12
+    comptime FF: KeyType = 12
     """form feed, \\f."""
-    alias CR: KeyType = 13
+    comptime CR: KeyType = 13
     """carriage return, \\r."""
-    alias SO: KeyType = 14
+    comptime SO: KeyType = 14
     """shift out."""
-    alias SI: KeyType = 15
+    comptime SI: KeyType = 15
     """shift in."""
-    alias DLE: KeyType = 16
+    comptime DLE: KeyType = 16
     """data link escape."""
-    alias DC1: KeyType = 17
+    comptime DC1: KeyType = 17
     """device control one."""
-    alias DC2: KeyType = 18
+    comptime DC2: KeyType = 18
     """device control two."""
-    alias DC3: KeyType = 19
+    comptime DC3: KeyType = 19
     """device control three."""
-    alias DC4: KeyType = 20
+    comptime DC4: KeyType = 20
     """device control four."""
-    alias NAK: KeyType = 21
+    comptime NAK: KeyType = 21
     """negative acknowledge."""
-    alias SYN: KeyType = 22
+    comptime SYN: KeyType = 22
     """synchronous idle."""
-    alias ETB: KeyType = 23
+    comptime ETB: KeyType = 23
     """end of transmission block."""
-    alias CAN: KeyType = 24
+    comptime CAN: KeyType = 24
     """cancel."""
-    alias EM: KeyType = 25
+    comptime EM: KeyType = 25
     """end of medium."""
-    alias SUB: KeyType = 26
+    comptime SUB: KeyType = 26
     """substitution."""
-    alias ESC: KeyType = 27
+    comptime ESC: KeyType = 27
     """escape, \\e."""
-    alias FS: KeyType = 28
+    comptime FS: KeyType = 28
     """file separator."""
-    alias GS: KeyType = 29
+    comptime GS: KeyType = 29
     """group separator."""
-    alias RS: KeyType = 30
+    comptime RS: KeyType = 30
     """record separator."""
-    alias US: KeyType = 31
+    comptime US: KeyType = 31
     """unit separator."""
-    alias DEL: KeyType = 127
+    comptime DEL: KeyType = 127
     """delete. on most systems this is mapped to backspace, I hear."""
 
     # Control key aliases.
-    alias Null: KeyType = Self.NUL
-    alias Break: KeyType = Self.ETX
-    alias Enter: KeyType = Self.CR if os_is_windows() else Self.LF
-    alias Backspace: KeyType = Self.DEL
-    alias Tab: KeyType = Self.HT
-    alias Esc: KeyType = Self.ESC
-    alias Escape: KeyType = Self.ESC
-    alias CtrlAt: KeyType = Self.NUL  # ctrl+@
-    alias CtrlA: KeyType = Self.SOH
-    alias CtrlB: KeyType = Self.STX
-    alias CtrlC: KeyType = Self.ETX
-    alias CtrlD: KeyType = Self.EOT
-    alias CtrlE: KeyType = Self.ENQ
-    alias CtrlF: KeyType = Self.ACK
-    alias CtrlG: KeyType = Self.BEL
-    alias CtrlH: KeyType = Self.BS
-    alias CtrlI: KeyType = Self.HT
-    alias CtrlJ: KeyType = Self.LF
-    alias CtrlK: KeyType = Self.VT
-    alias CtrlL: KeyType = Self.FF
-    alias CtrlM: KeyType = Self.CR
-    alias CtrlN: KeyType = Self.SO
-    alias CtrlO: KeyType = Self.SI
-    alias CtrlP: KeyType = Self.DLE
-    alias CtrlQ: KeyType = Self.DC1
-    alias CtrlR: KeyType = Self.DC2
-    alias CtrlS: KeyType = Self.DC3
-    alias CtrlT: KeyType = Self.DC4
-    alias CtrlU: KeyType = Self.NAK
-    alias CtrlV: KeyType = Self.SYN
-    alias CtrlW: KeyType = Self.ETB
-    alias CtrlX: KeyType = Self.CAN
-    alias CtrlY: KeyType = Self.EM
-    alias CtrlZ: KeyType = Self.SUB
-    alias CtrlOpenBracket: KeyType = Self.ESC  # ctrl+[
-    alias CtrlBackslash: KeyType = Self.FS  # ctrl+\
-    alias CtrlCloseBracket: KeyType = Self.GS  # ctrl+]
-    alias CtrlCaret: KeyType = Self.RS  # ctrl+^
-    alias CtrlUnderscore: KeyType = Self.US  # ctrl+_
-    alias CtrlQuestionMark: KeyType = Self.DEL  # ctrl+?
+    comptime Null: KeyType = Self.NUL
+    comptime Break: KeyType = Self.ETX
+    comptime Enter: KeyType = Self.LF
+    comptime Backspace: KeyType = Self.DEL
+    comptime Tab: KeyType = Self.HT
+    comptime Esc: KeyType = Self.ESC
+    comptime Escape: KeyType = Self.ESC
+    comptime CtrlAt: KeyType = Self.NUL  # ctrl+@
+    comptime CtrlA: KeyType = Self.SOH
+    comptime CtrlB: KeyType = Self.STX
+    comptime CtrlC: KeyType = Self.ETX
+    comptime CtrlD: KeyType = Self.EOT
+    comptime CtrlE: KeyType = Self.ENQ
+    comptime CtrlF: KeyType = Self.ACK
+    comptime CtrlG: KeyType = Self.BEL
+    comptime CtrlH: KeyType = Self.BS
+    comptime CtrlI: KeyType = Self.HT
+    comptime CtrlJ: KeyType = Self.LF
+    comptime CtrlK: KeyType = Self.VT
+    comptime CtrlL: KeyType = Self.FF
+    comptime CtrlM: KeyType = Self.CR
+    comptime CtrlN: KeyType = Self.SO
+    comptime CtrlO: KeyType = Self.SI
+    comptime CtrlP: KeyType = Self.DLE
+    comptime CtrlQ: KeyType = Self.DC1
+    comptime CtrlR: KeyType = Self.DC2
+    comptime CtrlS: KeyType = Self.DC3
+    comptime CtrlT: KeyType = Self.DC4
+    comptime CtrlU: KeyType = Self.NAK
+    comptime CtrlV: KeyType = Self.SYN
+    comptime CtrlW: KeyType = Self.ETB
+    comptime CtrlX: KeyType = Self.CAN
+    comptime CtrlY: KeyType = Self.EM
+    comptime CtrlZ: KeyType = Self.SUB
+    comptime CtrlOpenBracket: KeyType = Self.ESC  # ctrl+[
+    comptime CtrlBackslash: KeyType = Self.FS  # ctrl+\
+    comptime CtrlCloseBracket: KeyType = Self.GS  # ctrl+]
+    comptime CtrlCaret: KeyType = Self.RS  # ctrl+^
+    comptime CtrlUnderscore: KeyType = Self.US  # ctrl+_
+    comptime CtrlQuestionMark: KeyType = Self.DEL  # ctrl+?
 
     # Other keys.
-    alias Runes: KeyType = -1
-    alias Up: KeyType = -2
-    alias Down: KeyType = -3
-    alias Right: KeyType = -4
-    alias Left: KeyType = -5
-    alias ShiftTab: KeyType = -6
-    alias Home: KeyType = -7
-    alias End: KeyType = -8
-    alias PgUp: KeyType = -9
-    alias PgDown: KeyType = -10
-    alias CtrlPgUp: KeyType = -11
-    alias CtrlPgDown: KeyType = -12
-    alias Delete: KeyType = -13
-    alias Insert: KeyType = -14
-    alias Space: KeyType = -15
-    alias CtrlUp: KeyType = -16
-    alias CtrlDown: KeyType = -17
-    alias CtrlRight: KeyType = -18
-    alias CtrlLeft: KeyType = -19
-    alias CtrlHome: KeyType = -20
-    alias CtrlEnd: KeyType = -21
-    alias ShiftUp: KeyType = -22
-    alias ShiftDown: KeyType = -23
-    alias ShiftRight: KeyType = -24
-    alias ShiftLeft: KeyType = -25
-    alias ShiftHome: KeyType = -26
-    alias ShiftEnd: KeyType = -27
-    alias CtrlShiftUp: KeyType = -28
-    alias CtrlShiftDown: KeyType = -29
-    alias CtrlShiftLeft: KeyType = -30
-    alias CtrlShiftRight: KeyType = -31
-    alias CtrlShiftHome: KeyType = -32
-    alias CtrlShiftEnd: KeyType = -33
-    alias F1: KeyType = -34
-    alias F2: KeyType = -35
-    alias F3: KeyType = -36
-    alias F4: KeyType = -37
-    alias F5: KeyType = -38
-    alias F6: KeyType = -39
-    alias F7: KeyType = -40
-    alias F8: KeyType = -41
-    alias F9: KeyType = -42
-    alias F10: KeyType = -43
-    alias F11: KeyType = -44
-    alias F12: KeyType = -45
-    alias F13: KeyType = -46
-    alias F14: KeyType = -47
-    alias F15: KeyType = -48
-    alias F16: KeyType = -49
-    alias F17: KeyType = -50
-    alias F18: KeyType = -51
-    alias F19: KeyType = -52
-    alias F20: KeyType = -53
+    comptime Runes: KeyType = -1
+    comptime Up: KeyType = -2
+    comptime Down: KeyType = -3
+    comptime Right: KeyType = -4
+    comptime Left: KeyType = -5
+    comptime ShiftTab: KeyType = -6
+    comptime Home: KeyType = -7
+    comptime End: KeyType = -8
+    comptime PgUp: KeyType = -9
+    comptime PgDown: KeyType = -10
+    comptime CtrlPgUp: KeyType = -11
+    comptime CtrlPgDown: KeyType = -12
+    comptime Delete: KeyType = -13
+    comptime Insert: KeyType = -14
+    comptime Space: KeyType = -15
+    comptime CtrlUp: KeyType = -16
+    comptime CtrlDown: KeyType = -17
+    comptime CtrlRight: KeyType = -18
+    comptime CtrlLeft: KeyType = -19
+    comptime CtrlHome: KeyType = -20
+    comptime CtrlEnd: KeyType = -21
+    comptime ShiftUp: KeyType = -22
+    comptime ShiftDown: KeyType = -23
+    comptime ShiftRight: KeyType = -24
+    comptime ShiftLeft: KeyType = -25
+    comptime ShiftHome: KeyType = -26
+    comptime ShiftEnd: KeyType = -27
+    comptime CtrlShiftUp: KeyType = -28
+    comptime CtrlShiftDown: KeyType = -29
+    comptime CtrlShiftLeft: KeyType = -30
+    comptime CtrlShiftRight: KeyType = -31
+    comptime CtrlShiftHome: KeyType = -32
+    comptime CtrlShiftEnd: KeyType = -33
+    comptime F1: KeyType = -34
+    comptime F2: KeyType = -35
+    comptime F3: KeyType = -36
+    comptime F4: KeyType = -37
+    comptime F5: KeyType = -38
+    comptime F6: KeyType = -39
+    comptime F7: KeyType = -40
+    comptime F8: KeyType = -41
+    comptime F9: KeyType = -42
+    comptime F10: KeyType = -43
+    comptime F11: KeyType = -44
+    comptime F12: KeyType = -45
+    comptime F13: KeyType = -46
+    comptime F14: KeyType = -47
+    comptime F15: KeyType = -48
+    comptime F16: KeyType = -49
+    comptime F17: KeyType = -50
+    comptime F18: KeyType = -51
+    comptime F19: KeyType = -52
+    comptime F20: KeyType = -53
 
     @implicit
     fn __init__(out self, value: Int):
@@ -202,7 +202,7 @@ struct KeyType(Copyable, KeyElement, Movable, Stringable):
         Returns:
             A string representation of the key type, such as "ctrl+c" or "alt+a".
         """
-        return KEY_NAMES.get(self.value, "")
+        return materialize[KEY_NAMES]().get(self.value, "")
 
     fn __eq__(self, other: KeyType) -> Bool:
         """Checks if this key type is equal to another key type.
@@ -226,14 +226,6 @@ struct KeyType(Copyable, KeyElement, Movable, Stringable):
         """
         return self.value != other.value
 
-    fn __hash__(self) -> UInt:
-        """Returns a hash of the key type.
-
-        Returns:
-            A hash of the key type.
-        """
-        return hash(self.value)
-
     fn write_to[W: Writer, //](self, mut writer: W):
         """Formats the string representation of this type to the provided formatter.
 
@@ -245,8 +237,19 @@ struct KeyType(Copyable, KeyElement, Movable, Stringable):
         """
         writer.write("KeyType(value=", self.value, ")")
 
+    fn __hash__[H: Hasher, //](self, mut hasher: H):
+        """Hashes the key type.
 
-struct Key(Copyable, ExplicitlyCopyable, Movable, Stringable, Writable):
+        Parameters:
+            H: The type of the hasher to use.
+
+        Args:
+            hasher: The hasher to use.
+        """
+        hasher.update(self.value)
+
+
+struct Key(Copyable, EqualityComparable, Movable, Stringable, Writable):
     """Key contains information about a keypress."""
 
     var type: KeyType
@@ -285,17 +288,6 @@ struct Key(Copyable, ExplicitlyCopyable, Movable, Stringable, Writable):
             self.type == other.type and self.text == other.text and self.alt == other.alt and self.paste == other.paste
         )
 
-    fn __ne__(self, other: Self) -> Bool:
-        """Checks if this key is not equal to another key.
-
-        Args:
-            other: The other key to compare with.
-
-        Returns:
-            True if the keys are not equal, False otherwise.
-        """
-        return self.type != other.type or self.text != other.text or self.alt != other.alt or self.paste != other.paste
-
     fn write_to[W: Writer, //](self, mut writer: W):
         """Formats the string representation of this type to the provided formatter.
 
@@ -305,6 +297,7 @@ struct Key(Copyable, ExplicitlyCopyable, Movable, Stringable, Writable):
         Args:
             writer: The formatter to write to.
         """
+        var key_names = materialize[KEY_NAMES]()
         if self.type == KeyType.Runes:
             if self.alt:
                 writer.write("alt+")
@@ -315,14 +308,15 @@ struct Key(Copyable, ExplicitlyCopyable, Movable, Stringable, Writable):
                 writer.write("]")
             return
 
-        var key_name = KEY_NAMES.get(self.type)
+        var key_name = key_names.get(self.type)
         if key_name:
             writer.write(key_name.value())
             return
 
-        var sequence = SEQUENCES.get(self.text)
+        var sequences = materialize[SEQUENCES]()
+        var sequence = sequences.get(self.text)
         if sequence:
-            writer.write(KEY_NAMES.get(sequence.value().type, ""))
+            writer.write(key_names.get(sequence.value().type, ""))
             return
 
     fn __str__(self) -> String:
@@ -334,7 +328,7 @@ struct Key(Copyable, ExplicitlyCopyable, Movable, Stringable, Writable):
         return String.write(self)
 
 
-alias KEY_NAMES: Dict[KeyType, String] = {
+comptime KEY_NAMES: Dict[KeyType, StaticString] = {
     KeyType.NUL: "ctrl+@",
     KeyType.SOH: "ctrl+a",
     KeyType.STX: "ctrl+b",
@@ -425,7 +419,7 @@ alias KEY_NAMES: Dict[KeyType, String] = {
 """Mappings for control keys and other special keys to human friendly string representations."""
 
 
-alias SEQUENCES: Dict[String, Key] = {
+comptime SEQUENCES: Dict[String, Key] = {
     "\x1b[A": Key(KeyType.Up),
     "\x1b[B": Key(KeyType.Down),
     "\x1b[C": Key(KeyType.Right),
