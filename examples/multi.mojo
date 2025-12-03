@@ -1,19 +1,20 @@
-import banjo
-from banjo.program import TUI, Model, Cmd
-from banjo.msg import exit_msg, GeneralMsg, Msg, ExitMsg, KeyMsg
-from banjo.key import KeyType
-from banjo.renderer import Renderer
 import mog
+from banjo.key import KeyType
+from banjo.msg import ExitMsg, GeneralMsg, KeyMsg, Msg, exit_msg
+from banjo.program import TUI, Cmd, Model
+from banjo.renderer import Renderer
 from mog import Position
 
+import banjo
 
-@value
+
+@fieldwise_init
 @register_passable("trivial")
 struct State(Writable, Stringable):
     var value: UInt8
-    alias START = Self(0)
-    alias MENU = Self(1)
-    alias END = Self(2)
+    comptime START = Self(0)
+    comptime MENU = Self(1)
+    comptime END = Self(2)
 
     fn __str__(self) -> String:
         if self == State.START:
@@ -49,7 +50,7 @@ fn change_state_to_end() -> Msg:
     return Msg(GeneralMsg("StateMsg=State.END"))
 
 
-@value
+@fieldwise_init
 struct BaseModel(Model):
     var last_key: String
     var index: Int
@@ -114,24 +115,33 @@ struct BaseModel(Model):
         return
 
     fn view(self) -> String:
-        alias border = mog.Style(mog.ANSI).border_foreground(mog.Color(5)).border(mog.ROUNDED_BORDER).padding(
-            0, 1
-        ).width(50).height(5).alignment(Position.CENTER, Position.CENTER)
+        comptime border = mog.Style(
+            mog.Profile.ANSI,
+            width=50,
+            height=5,
+            padding=mog.Padding(1, 0),
+            alignment=mog.Alignment(Position.CENTER),
+            border=mog.ROUNDED_BORDER,
+        ).set_border_foreground(mog.Color(5))
 
         if self.state == State.START:
             return border.render("Press Enter to continue\nor\nQ to quit.")
         elif self.state == State.MENU:
-            alias left = mog.Style(mog.ANSI).border(mog.ROUNDED_BORDER).border_foreground(mog.Color(8)).padding(
-                0, 1
-            ).width(20).height(5)
-            alias right = left.alignment(Position.CENTER, Position.CENTER)
+            comptime left = mog.Style(
+                mog.Profile.ANSI,
+                width=20,
+                height=5,
+                border=mog.ROUNDED_BORDER,
+                padding=mog.Padding(1, 0),
+                ).set_border_foreground(mog.Color(8))
+            comptime right = left.set_text_alignment(Position.CENTER)
             var cursor_a: String = "> " if self.index == 0 else "  "
             var cursor_b: String = "> " if self.index == 1 else "  "
             var lhs = left.render("Options:" + "\n" + cursor_a + "1. Option A\n" + cursor_b + "2. Option B\n")
             var rhs = right.render("Last Key: " + self.last_key)
             return border.render(mog.join_horizontal(Position.CENTER, lhs, rhs))
         elif self.state == State.END:
-            alias option_style = mog.Style(mog.ANSI).foreground(mog.Color(2))
+            comptime option_style = mog.Style(mog.Profile.ANSI, foreground=mog.Color(2))
             var option = "Option A" if self.index == 0 else "Option B"
             return border.render("You selected", option_style.render(option), "\nPress Q to quit.")
 

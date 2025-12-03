@@ -1,13 +1,13 @@
-from sys.ffi import external_call, os_is_windows, os_is_macos
-from collections import Optional, Set, BitSet
+from collections import BitSet, Set
 from sys import exit, stdin
-from mist.termios.c import c_void, c_int
+from sys.ffi import c_int, external_call, get_errno
+
 import mist.termios.c
-from banjo.multiplex.selector import Selector
 from banjo.multiplex.event import Event
+from banjo.multiplex.selector import Selector
 
 
-@value
+@fieldwise_init
 @register_passable("trivial")
 struct TimeValue:
     """Represents a time value for the `select` function."""
@@ -21,7 +21,7 @@ struct TimeValue:
 # TODO (Mikhail): Perhaps tune the size of the bitset to a reasonable
 # maximum number of file descriptors. On some platforms, it's technically infinity.
 # But how many files will reasonably be open at the same time?
-alias FileDescriptorBitSet = BitSet[1024]
+comptime FileDescriptorBitSet = BitSet[1024]
 """BitSet for file descriptors, with a size of 1024 bits."""
 
 
@@ -91,14 +91,14 @@ fn select(
     )
 
     if result == -1:
-        var errno = c.get_errno()
-        if errno == c.EBADF:
+        var errno = get_errno()
+        if errno == errno.EBADF:
             raise Error("[EBADF] An invalid file descriptor was given in one of the sets.")
-        elif errno == c.EINTR:
+        elif errno == errno.EINTR:
             raise Error("[EINTR] A signal was caught.")
-        elif errno == c.EINVAL:
+        elif errno == errno.EINVAL:
             raise Error("[EINVAL] nfds is negative or exceeds the RLIMIT_NOFILE resource limit.")
-        elif errno == c.ENOMEM:
+        elif errno == errno.ENOMEM:
             raise Error("[ENOMEM] Unable to allocate memory for internal tables.")
         else:
             raise Error("[UNKNOWN] Unknown error occurred.")

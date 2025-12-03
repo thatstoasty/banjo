@@ -3,7 +3,7 @@ from mist.terminal.cursor import clear_screen, move_cursor
 
 @fieldwise_init
 @register_passable("trivial")
-struct Renderer(Copyable, ExplicitlyCopyable, Movable):
+struct Renderer(Copyable, ImplicitlyCopyable, Movable):
     """A simple renderer that prints to the terminal."""
 
     var framerate: Float64

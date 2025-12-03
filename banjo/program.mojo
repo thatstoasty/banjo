@@ -1,17 +1,18 @@
-from time import sleep
 from sys import stderr
-from runtime.asyncrt import TaskGroup
-from mist.terminal.tty import TTY, Mode
-from banjo.renderer import Renderer
-from banjo.multiplex.select import Event, SelectSelector
+from time import sleep
+
 from banjo.key import Key, KeyType
-from banjo.key_msg import read_events, KeyMsg
-from banjo.msg import Msg, ExitMsg, NoMsg
+from banjo.key_msg import KeyMsg, read_events
+from banjo.msg import ExitMsg, Msg, NoMsg
+from banjo.multiplex.select import Event, SelectSelector
+from banjo.renderer import Renderer
+from mist.terminal.tty import TTY, Mode
+from runtime.asyncrt import TaskGroup
 
 
-alias CmdFn = fn () -> Msg
+comptime CmdFn = fn () -> Msg
 """Function that returns a Msg. This is used to represent commands that can be executed in the TUI."""
-alias Cmd = Optional[CmdFn]
+comptime Cmd = Optional[CmdFn]
 """Command that can be executed in the TUI."""
 
 
@@ -125,7 +126,7 @@ struct TUI[T: Model]:
 
     fn __init__(
         out self,
-        owned model: T,
+        var model: T,
         renderer: Renderer = Renderer(24),
     ):
         """Initializes the TUI with a model and a renderer.
