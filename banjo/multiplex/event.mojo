@@ -1,15 +1,15 @@
 @fieldwise_init
 @register_passable("trivial")
-struct Event(Copyable, ExplicitlyCopyable, Movable):
+struct Event(Boolable, Copyable, EqualityComparable, ImplicitlyCopyable, Movable):
     """Represents an event that can be monitored by the `select` function."""
 
     var value: Int
     """Internal value representing the event."""
-    alias READ = Self(1)
+    comptime READ = Self(1)
     """Event for read operations."""
-    alias WRITE = Self(2)
+    comptime WRITE = Self(2)
     """Event for write operations."""
-    alias READ_WRITE = Self(3)
+    comptime READ_WRITE = Self(3)
     """Event for both read and write operations."""
 
     fn __eq__(self, other: Self) -> Bool:
@@ -22,17 +22,6 @@ struct Event(Copyable, ExplicitlyCopyable, Movable):
             True if the events are equal, False otherwise.
         """
         return self.value == other.value
-
-    fn __ne__(self, other: Self) -> Bool:
-        """Inequality comparison.
-
-        Args:
-            other: The other event to compare with.
-
-        Returns:
-            True if the events are not equal, False otherwise.
-        """
-        return self.value != other.value
 
     fn __or__(self, rhs: Self) -> Self:
         """Bitwise OR operation.
