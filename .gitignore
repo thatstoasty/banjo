@@ -174,5 +174,5 @@ output
 
 # Mojo
 *.mojopkg
-
+kgen.*
 *.dSYM
