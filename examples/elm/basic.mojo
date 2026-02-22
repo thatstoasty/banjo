@@ -38,20 +38,11 @@ struct Decrement(ImplicitlyCopyable):
 
 @fieldwise_init
 @register_passable("trivial")
-struct State(ImplicitlyCopyable, Writable, Stringable):
+struct State(ImplicitlyCopyable, Writable):
     var value: UInt8
     comptime START = Self(0)
     comptime MENU = Self(1)
     comptime END = Self(2)
-
-    fn __str__(self) -> String:
-        if self == State.START:
-            return "START"
-        elif self == State.MENU:
-            return "MENU"
-        elif self == State.END:
-            return "END"
-        return "Invalid state."
 
     fn write_to(self, mut writer: Some[Writer]) -> None:
         writer.write("State(value=", self.value, ")")
@@ -115,8 +106,8 @@ comptime LEFT = mog.Style(
     height=5,
     border=mog.ROUNDED_BORDER,
     padding=mog.Padding(1, 0),
-).set_border_foreground(mog.Color(8))
-comptime RIGHT = LEFT.set_text_alignment(Position.CENTER)
+).border_foreground(mog.Color(8))
+comptime RIGHT = LEFT.text_alignment(Position.CENTER)
 comptime BORDER = mog.Style(
     Profile.ANSI,
     width=50,
@@ -124,7 +115,7 @@ comptime BORDER = mog.Style(
     padding=mog.Padding(1, 0),
     alignment=mog.Alignment(Position.CENTER),
     border=mog.ROUNDED_BORDER,
-).set_border_foreground(mog.Color(5))
+).border_foreground(mog.Color(5))
 comptime OPTION = mog.Style(Profile.ANSI, foreground=mog.Color(2))
 
 
