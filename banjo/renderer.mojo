@@ -1,4 +1,3 @@
-# from mist.terminal.cursor import clear_screen, move_cursor
 from mist.terminal.cursor import move_cursor_sequence, ERASE_DISPLAY, cursor_up_sequence
 from mist.terminal.screen import CLEAR_LINE_RIGHT
 from mist.transform.ansi import string_width

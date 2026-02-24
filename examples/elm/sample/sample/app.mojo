@@ -182,17 +182,3 @@ struct Model(Movable):
             return BORDER.render("You selected", OPTION.render(option), "\nPress Q to quit.")
 
         return "Somehow reached an invalid state, please exit the program."
-
-
-fn main() raises:
-    var tui = Model()
-    var reader = EventReader()
-    with TTY[Mode.RAW]():
-        while not tui.done:
-            tui.renderer.write(tui.view())
-            var msg = handle_event(reader.read())
-            if msg:
-                while True:
-                    msg = tui.update(msg.value())
-                    if not msg:
-                        break
