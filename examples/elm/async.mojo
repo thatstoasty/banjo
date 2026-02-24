@@ -164,20 +164,15 @@ fn handle_event(event: Event) raises -> Optional[Msg]:
     return
 
 
-async fn view(mut model: Model) -> None:
+async fn view(model: Model) -> None:
     """View loop for the TUI. This is responsible for rendering the view to the terminal.
 
     Args:
         model: The TUI instance.
     """
-    # var i = 0
+    var renderer = model.renderer.copy()
     while not model.done:
-        # print("Rendering view", i)
-        model.renderer.write(model.view())
-        # print("Render complete", i)
-        # sleep(1 / model.renderer.framerate)
-        # print("Sleep complete", i)
-        # i += 1
+        renderer.write(model.view())
 
 
 async fn update(mut model: Model) -> None:
@@ -199,6 +194,23 @@ async fn update(mut model: Model) -> None:
         print(e)
         return
 
+
+# comptime border = mog.Style(
+#     width=50,
+#     height=5,
+#     padding=mog.Padding(1, 0),
+#     alignment=mog.Alignment(Position.CENTER),
+#     border=mog.ROUNDED_BORDER,
+# ).border_foreground(mog.Color(5))
+comptime left = mog.Style(
+    mog.Profile.ANSI,
+    width=20,
+    height=5,
+    border=mog.ROUNDED_BORDER,
+    padding=mog.Padding(1, 0),
+).border_foreground(mog.Color(8))
+comptime right = left.text_alignment(Position.CENTER)
+comptime option_style = mog.Style(mog.Profile.ANSI, foreground=mog.Color(2))
 
 @fieldwise_init
 struct Model(Movable):
@@ -257,26 +269,16 @@ struct Model(Movable):
             padding=mog.Padding(1, 0),
             alignment=mog.Alignment(Position.CENTER),
             border=mog.ROUNDED_BORDER,
-        ).set_border_foreground(mog.Color(5))
-
+        ).border_foreground(mog.Color(5))
         if self.state == State.START:
             return border.render("Press Enter to continue\nor\nQ to quit.")
         elif self.state == State.MENU:
-            comptime left = mog.Style(
-                mog.Profile.ANSI,
-                width=20,
-                height=5,
-                border=mog.ROUNDED_BORDER,
-                padding=mog.Padding(1, 0),
-            ).set_border_foreground(mog.Color(8))
-            comptime right = left.set_text_alignment(Position.CENTER)
             var cursor_a: String = "> " if self.index == 0 else "  "
             var cursor_b: String = "> " if self.index == 1 else "  "
             var lhs = left.render("Options:" + "\n" + cursor_a + "1. Option A\n" + cursor_b + "2. Option B\n")
             var rhs = right.render("Last Key: " + self.last_key)
             return border.render(mog.join_horizontal(Position.CENTER, lhs, rhs))
         elif self.state == State.END:
-            comptime option_style = mog.Style(mog.Profile.ANSI, foreground=mog.Color(2))
             var option = "Option A" if self.index == 0 else "Option B"
             return border.render("You selected", option_style.render(option), "\nPress Q to quit.")
 

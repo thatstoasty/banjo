@@ -10,3 +10,8 @@ TUI building blocks in Mojo via `libc`.
 
 This is very much a work in progress, but please do check out the examples in the `examples/` directory to see how to use it!
 If you need `termios` functionality, you can use `mist`, which provides `termios` bindings and wrappers instead of `banjo` which attempts to provide a TEA based interface over it (like `charmbracelet/bubbletea in Go).
+
+
+# TODO
+
+- Add alternate screen buffer support to renderer.

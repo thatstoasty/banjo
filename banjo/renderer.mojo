@@ -140,13 +140,13 @@ struct Renderer(Copyable):
             # if canSkip:
             #     # Unless this is the last line, move the cursor down.
             #     if i < len(newLines)-1:
-            #         buf.write('\n')
+            #         buf.write("\n")
             #     continue
 
             if i == 0 and self.last_render == "":
                 # On first render, reset the cursor to the start of the line
                 # before writing anything.
-                buf.write('\r')
+                buf.write("\r")
 
             var line = String(newLines[i])
 
