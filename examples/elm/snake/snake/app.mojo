@@ -66,6 +66,14 @@ struct Direction(ImplicitlyCopyable, Equatable):
     fn __eq__(self, other: Self) -> Bool:
         return self.value == other.value
 
+    fn is_opposite(self, b: Direction) -> Bool:
+        return (
+            (self == Direction.UP and b == Direction.DOWN)
+            or (self == Direction.DOWN and b == Direction.UP)
+            or (self == Direction.LEFT and b == Direction.RIGHT)
+            or (self == Direction.RIGHT and b == Direction.LEFT)
+        )
+
 
 @fieldwise_init
 @register_passable("trivial")
@@ -146,6 +154,17 @@ struct Snake(Movable):
     var direction: Direction
     var next_direction: Direction
 
+    fn __init__(out self, cx: Int, cy: Int):
+        self.points = [Point(cx - 2, cy), Point(cx - 1, cy), Point(cx, cy)]
+        self.direction = Direction.RIGHT
+        self.next_direction = Direction.RIGHT
+
+    fn has(self, point: Point) -> Bool:
+        for segment in self.points:
+            if segment == point:
+                return True
+        return False
+
 
 @fieldwise_init
 struct GameState(Movable):
@@ -153,72 +172,51 @@ struct GameState(Movable):
     var turns: Int
     var seed: Int
 
+    fn reset(mut self):
+        self.score = 0
+        self.turns = 0
+
 
 @fieldwise_init
 struct Model(Movable):
     var width: Int
     var height: Int
     var phase: Phase
-    var snake: List[Point]
-    var direction: Direction
-    var next_direction: Direction
+    var snake: Snake
     var food: Point
-    var score: Int
-    var turns: Int
-    var seed: Int
+    var game: GameState
     var done: Bool
     var renderer: Renderer
+    var board_style: mog.Style
 
     fn __init__(out self):
         self.width = 22
         self.height = 14
         self.phase = Phase.START
-        self.snake = List[Point]()
-        self.direction = Direction.RIGHT
-        self.next_direction = Direction.RIGHT
+        self.snake = Snake(self.width // 2, self.height // 2)
         self.food = Point(0, 0)
-        self.score = 0
-        self.turns = 0
-        self.seed = 7
+        self.game = GameState(score=0, turns=0, seed=7)
         self.done = False
         self.renderer = Renderer(stdout, 24)
-        self.reset_board()
+        self.board_style = mog.Style(
+            Profile.ANSI,
+            foreground=mog.Color(7),
+            border=mog.ROUNDED_BORDER,
+        ).width(self.width * 2).height(self.height)
 
     fn reset_board(mut self):
-        var cx = self.width // 2
-        var cy = self.height // 2
-        self.snake = List[Point]()
-        self.snake.append(Point(cx - 2, cy))
-        self.snake.append(Point(cx - 1, cy))
-        self.snake.append(Point(cx, cy))
-        self.direction = Direction.RIGHT
-        self.next_direction = Direction.RIGHT
-        self.score = 0
-        self.turns = 0
+        self.snake = Snake(self.width // 2, self.height // 2)
+        self.game.reset()
         self.place_food()
 
-    fn is_opposite(self, a: Direction, b: Direction) -> Bool:
-        return (
-            (a == Direction.UP and b == Direction.DOWN)
-            or (a == Direction.DOWN and b == Direction.UP)
-            or (a == Direction.LEFT and b == Direction.RIGHT)
-            or (a == Direction.RIGHT and b == Direction.LEFT)
-        )
-
-    fn snake_has(self, point: Point) -> Bool:
-        for segment in self.snake:
-            if segment == point:
-                return True
-        return False
-
     fn place_food(mut self):
-        var open_cells = self.width * self.height - len(self.snake)
+        var open_cells = self.width * self.height - len(self.snake.points)
         if open_cells <= 0:
             self.phase = Phase.WON
             return
 
-        self.seed = (self.seed * 1103515245 + 12345) % 2147483647
-        var target = (self.seed + self.turns * 31 + self.score * 17) % open_cells
+        self.game.seed = (self.game.seed * 1103515245 + 12345) % 2147483647
+        var target = (self.game.seed + self.game.turns * 31 + self.game.score * 17) % open_cells
 
         var count = 0
         var y = 0
@@ -226,7 +224,7 @@ struct Model(Movable):
             var x = 0
             while x < self.width:
                 var cell = Point(x, y)
-                if not self.snake_has(cell):
+                if not self.snake.has(cell):
                     if count == target:
                         self.food = cell
                         return
@@ -238,15 +236,15 @@ struct Model(Movable):
         if self.phase != Phase.RUNNING:
             return
 
-        self.direction = self.next_direction
-        var head = self.snake[len(self.snake) - 1]
+        self.snake.direction = self.snake.next_direction
+        var head = self.snake.points[len(self.snake.points) - 1]
         var next_head = head
 
-        if self.direction == Direction.UP:
+        if self.snake.direction == Direction.UP:
             next_head.y -= 1
-        elif self.direction == Direction.DOWN:
+        elif self.snake.direction == Direction.DOWN:
             next_head.y += 1
-        elif self.direction == Direction.LEFT:
+        elif self.snake.direction == Direction.LEFT:
             next_head.x -= 1
         else:
             next_head.x += 1
@@ -256,8 +254,8 @@ struct Model(Movable):
             return
 
         var i = 0
-        while i < len(self.snake):
-            if self.snake[i] == next_head:
+        while i < len(self.snake.points):
+            if self.snake.points[i] == next_head:
                 self.phase = Phase.GAME_OVER
                 return
             i += 1
@@ -266,21 +264,21 @@ struct Model(Movable):
         var new_snake = List[Point]()
         if growing:
             var j = 0
-            while j < len(self.snake):
-                new_snake.append(self.snake[j])
+            while j < len(self.snake.points):
+                new_snake.append(self.snake.points[j])
                 j += 1
         else:
             var j = 1
-            while j < len(self.snake):
-                new_snake.append(self.snake[j])
+            while j < len(self.snake.points):
+                new_snake.append(self.snake.points[j])
                 j += 1
 
         new_snake.append(next_head)
-        self.snake = new_snake^
-        self.turns += 1
+        self.snake = Snake(new_snake^, self.snake.direction, self.snake.next_direction)
+        self.game.turns += 1
 
         if growing:
-            self.score += 1
+            self.game.score += 1
             self.place_food()
 
     fn update(mut self, msg: Msg) -> Optional[Msg]:
@@ -300,9 +298,9 @@ struct Model(Movable):
             return
 
         if msg.isa[Direction]():
-            var wanted = msg[Direction]
-            if self.phase == Phase.RUNNING and not self.is_opposite(self.direction, wanted):
-                self.next_direction = wanted
+            ref wanted = msg[Direction]
+            if self.phase == Phase.RUNNING and not self.snake.direction.is_opposite(wanted):
+                self.snake.next_direction = wanted
             return Msg(Step())
 
         if msg.isa[Step]():
@@ -316,25 +314,20 @@ struct Model(Movable):
         if p == self.food and self.phase == Phase.RUNNING:
             return "●"
 
-        var last = len(self.snake) - 1
-        if self.snake[last] == p:
+        var last = len(self.snake.points) - 1
+        if self.snake.points[last] == p:
             return "█"
 
         var i = 0
         while i < last:
-            if self.snake[i] == p:
+            if self.snake.points[i] == p:
                 return "▓"
             i += 1
 
         return "·"
 
     fn board_view(self) -> String:
-        var BOARD = mog.Style(
-            Profile.ANSI,
-            foreground=mog.Color(7),
-            border=mog.ROUNDED_BORDER,
-        ).width(self.width * 2).height(self.height)
-        var out = String()
+        var out = String(capacity=self.width * self.height * 2)
         var y = 0
         while y < self.height:
             x = 0
@@ -344,7 +337,7 @@ struct Model(Movable):
                 x += 1
             y += 1
 
-        return BOARD.render(out)
+        return self.board_style.render(out)
 
     fn view(self) -> String:
         comptime HELP = "Controls: W/A/S/D or H/J/K/L (Up/Down arrows supported), Space/Enter to start, R restart, Q quit"
@@ -362,7 +355,7 @@ struct Model(Movable):
         var body = join_vertical(
             Position.LEFT,
             TITLE.render("Snake"),
-            String("Score: ", self.score, "   Length: ", len(self.snake), "   Turns: ", self.turns),
+            String("Score: ", self.game.score, "   Length: ", len(self.snake.points), "   Turns: ", self.game.turns),
             "\n",
             self.board_view(),
             "\n",
@@ -377,19 +370,3 @@ struct Model(Movable):
             body.write_string(SUCCESS.render("You won. Press R (or Enter) to play again."))
 
         return PANEL.render(body)
-
-
-fn main() raises:
-    var snake = Model()
-    var reader = EventReader()
-
-    with TTY[Mode.RAW]():
-        while not snake.done:
-            snake.renderer.write(snake.view())
-
-            var msg = handle_event(reader.read())
-            if msg:
-                while True:
-                    msg = snake.update(msg.value())
-                    if not msg:
-                        break
