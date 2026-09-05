@@ -161,13 +161,16 @@ struct Renderer(Copyable):
                 line = truncate(line, UInt(self.width), "")
 
             buf.write_string(line)
-            if string_width(line) < UInt(self.width):
-                # We only erase the rest of the line when the line is shorter than
-                # the width of the terminal. When the cursor reaches the end of
-                # the line, any escape sequences that follow will only affect the
-                # last cell of the line.
-
-                # Removing previously rendered content at the end of line.
+            if self.width == 0 or string_width(line) < UInt(self.width):
+                # Erase whatever the previous frame left to the right of this
+                # line, or a frame that shrinks leaves a tail behind: drawing
+                # "done" over "downloading" would otherwise read "donewnloading".
+                #
+                # The check skips a line that exactly fills the terminal, where
+                # the cursor has nowhere left to sit and the sequence would
+                # affect the last cell instead. An unknown width -- which is
+                # the usual case, since nothing measures the terminal yet --
+                # cannot hit that, so it always erases.
                 buf.write_string(CLEAR_LINE_RIGHT)
 
             if i < len(newLines) - 1:

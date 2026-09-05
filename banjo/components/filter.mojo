@@ -59,7 +59,7 @@ def _is_word_boundary(previous: StringSpan) -> Bool:
 
 
 @fieldwise_init
-struct Match(Copyable, Movable):
+struct Match(Copyable):
     """One target that matched the pattern."""
 
     var index: Int

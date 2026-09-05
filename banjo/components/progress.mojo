@@ -21,7 +21,7 @@ import mog
 from mist.transform.ansi import string_width
 
 
-struct ProgressBar(Copyable, Movable):
+struct ProgressBar(Copyable):
     """Draws a proportion of a fixed width as a filled bar."""
 
     var width: Int

@@ -33,7 +33,7 @@ for no benefit.
 
 
 @fieldwise_init
-struct Column(Copyable, Movable):
+struct Column(Copyable):
     """One column of a table."""
 
     var title: String
@@ -43,7 +43,7 @@ struct Column(Copyable, Movable):
 
 
 @fieldwise_init
-struct TableStyles(Copyable, Movable):
+struct TableStyles(Copyable):
     """How the parts of a table are drawn."""
 
     var header: Optional[mog.Style]
@@ -61,7 +61,7 @@ struct TableStyles(Copyable, Movable):
 
 
 @fieldwise_init
-struct KeyMap(Copyable, Movable):
+struct KeyMap(Copyable):
     """The key bindings a table responds to."""
 
     var up: Binding
@@ -87,7 +87,7 @@ struct KeyMap(Copyable, Movable):
         self.last = Binding([press(End()), press(Char("G"))], Help("end/G", "go to end"))
 
 
-struct Table(Copyable, Movable):
+struct Table(Copyable):
     """A description of how to draw a table. The selection lives elsewhere."""
 
     var columns: List[Column]

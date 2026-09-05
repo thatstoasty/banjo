@@ -24,7 +24,7 @@ import mog
 
 
 @fieldwise_init
-struct Frames(Copyable, Movable):
+struct Frames(Copyable):
     """A set of spinner frames and the rate they are meant to run at."""
 
     var frames: List[String]
@@ -156,7 +156,7 @@ def moon() -> Frames:
     )
 
 
-struct Spinner(Copyable, Movable):
+struct Spinner(Copyable):
     """A spinner and the frame it is currently showing."""
 
     var frames: Frames

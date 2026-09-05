@@ -24,7 +24,7 @@ from termctl.event.event import Backspace, Char, Delete, End, Home, KeyEvent, Ke
 
 
 @fieldwise_init
-struct KeyMap(Copyable, Movable):
+struct KeyMap(Copyable):
     """The key bindings a text input responds to, beyond typing."""
 
     var backspace: Binding
@@ -71,7 +71,7 @@ def _codepoints(text: StringSpan) -> List[String]:
     return out^
 
 
-struct TextInput(Copyable, Movable):
+struct TextInput(Copyable):
     """A single line of editable text."""
 
     var value: String
