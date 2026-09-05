@@ -124,7 +124,7 @@ trait Program(Movable):
 
 
 @fieldwise_init
-struct Timer(Copyable, Movable):
+struct Timer(Copyable):
     """A cadence the runtime asks the app about.
 
     Deliberately holds no message. A `List` of app-typed messages stored on the
