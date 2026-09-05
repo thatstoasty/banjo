@@ -1,0 +1,18 @@
+[workspace]
+authors = ["Mikhail Tavarez <miktavarez@gmail.com>"]
+channels = ["https://repo.prefix.dev/mojo-community", "conda-forge", "https://conda.modular.com/max"]
+name = "component-examples"
+platforms = ["linux-64", "osx-arm64", "linux-aarch64"]
+version = "0.1.0"
+preview = ["pixi-build"]
+
+[package.build]
+backend = { name = "pixi-build-mojo", version = "*" }
+
+[tasks]
+spinner = "mojo -D ASSERT=all spinner.mojo"
+progress = "mojo -D ASSERT=all progress.mojo"
+table = "mojo -D ASSERT=all table.mojo"
+
+[dependencies]
+banjo = { path = "../.." }

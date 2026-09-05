@@ -137,10 +137,28 @@ takes a value receiver -- and `bubbles/list` resolves it the same way, calling
 Ratatui is the odd one out: `StatefulWidget::render` takes `&mut Self::State`
 and does this bookkeeping at render time.
 
+## Further components
+
+Ported after the list, on the same contract.
+
+- **`spinner`.** Frame sets and an index. Go's spinner owns a `tea.Cmd` that
+  reschedules itself at its FPS; `Runtime.every` already does that, so each
+  frame set just carries the rate it was designed for and the application
+  registers the timer.
+- **`progress`.** A pure function of a percentage, as ratatui's `Gauge` is.
+  Two things are dropped: Go's spring-simulated animation, which needs
+  commands and belongs in the application anyway, and its gradient fill, which
+  needs `lipgloss.Blend1D` and has no `mog` equivalent.
+- **`table`.** Columns, rows, a header and a scrolling selectable body.
+  `TableState` is an alias of `ListState` rather than a second type -- the two
+  hold the same two fields, and `bubbles` duplicates the navigation logic
+  between its list and its table for no benefit.
+
 ## A note on `termctl` key equality
 
-`key.matches` folds letter case itself rather than using `KeyEvent.__eq__`.
-`EventType` requires `Equatable`, but `KeyEvent.__eq__` is declared `raises`, so
-it does not satisfy that requirement and `==` resolves to structural equality
-instead. The normalising implementation is unreachable: `G`, `shift+g` and
-`shift+G` all render as `G` yet none compare equal.
+*Fixed.* `KeyEvent.__eq__` was declared `raises`, so it did not satisfy the
+`Equatable` requirement `EventType` carries, and `==` silently resolved to
+structural equality with the case normalisation unreachable -- `G`, `shift+g`
+and `shift+G` all rendered as `G` yet none compared equal. It is now
+non-raising, and `key.matches` compares `KeyEvent` values directly rather than
+folding case itself.

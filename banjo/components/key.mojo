@@ -123,50 +123,13 @@ struct Binding(Copyable):
         self.help = Help()
 
 
-def _fold_case(event: KeyEvent) raises -> Tuple[KeyCode, KeyModifiers]:
-    """Folds a keystroke into a canonical code and modifier pair.
-
-    `G`, `shift+g` and `shift+G` are one keystroke as far as a binding is
-    concerned, so all three fold to `G` with Shift held. Without this a binding
-    written one way would silently miss the other spellings.
-
-    Note that `KeyEvent.__eq__` cannot be used for this. It is declared
-    `raises`, so it does not satisfy the `Equatable` requirement `EventType`
-    carries, and `==` on a `KeyEvent` resolves to structural equality instead --
-    which compares the raw code and modifiers and folds nothing.
-
-    Args:
-        event: The keystroke to fold.
-
-    Returns:
-        The canonical key code and modifiers.
-
-    Raises:
-        Error: If the shifted codepoint is not valid Unicode.
-    """
-    var code = event.code
-    var modifiers = event.modifiers
-
-    if not code.isa[Char]():
-        return (code, modifiers)
-
-    var character = code[Char].char
-    if character.is_ascii_upper():
-        modifiers.insert(KeyModifiers.SHIFT)
-    elif modifiers.contains(KeyModifiers.SHIFT):
-        var codepoint = character.to_u32()
-        if codepoint >= 97 and codepoint <= 122:
-            code = KeyCode(Char(codepoint - 32))
-
-    return (code, modifiers)
-
-
-def matches(event: KeyEvent, binding: Binding) raises -> Bool:
+def matches(event: KeyEvent, binding: Binding) -> Bool:
     """Reports whether a key event triggers a binding.
 
     Only the key and its modifiers are compared. The event kind is ignored, so
     a held key repeating still fires the binding, and lock state is ignored, so
-    Caps Lock does not stop one from matching.
+    Caps Lock does not stop one from matching. Letter case is folded by
+    `KeyEvent.__eq__`, which treats `G` and `shift+g` as one keystroke.
 
     Args:
         event: The key event that arrived.
@@ -174,16 +137,14 @@ def matches(event: KeyEvent, binding: Binding) raises -> Bool:
 
     Returns:
         True if the binding is enabled and one of its keystrokes matches.
-
-    Raises:
-        Error: Propagated from folding a keystroke.
     """
     if not binding.enabled():
         return False
 
-    var pressed = _fold_case(event)
+    # Rebuilt with the default kind and state so the comparison below turns on
+    # the code and modifiers alone.
+    var pressed = KeyEvent(event.code, event.modifiers)
     for ref candidate in binding.keys:
-        var bound = _fold_case(candidate)
-        if pressed[0] == bound[0] and pressed[1] == bound[1]:
+        if pressed == KeyEvent(candidate.code, candidate.modifiers):
             return True
     return False
