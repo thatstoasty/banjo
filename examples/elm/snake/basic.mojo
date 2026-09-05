@@ -1,17 +1,20 @@
-from mist.terminal.tty import TTY, Mode
-from mist.event.read import EventReader
-from snake.app import Model, handle_event
+from banjo.app import Runtime
+from termctl.multiplex.kqueue import KQueueSelector
+from snake.app import Model, STEP_TIMER
 
 
-fn main() raises:
-    var snake = Model()
-    var reader = EventReader()
-    with TTY[Mode.RAW]():
-        while not snake.done:
-            snake.renderer.write(snake.view())
-            var msg = handle_event(reader.read())
-            if msg:
-                while True:
-                    msg = snake.update(msg.value())
-                    if not msg:
-                        break
+comptime RENDER_HZ = 24.0
+"""How often the board is repainted."""
+comptime STEP_HZ = 10.0
+"""How often the snake advances, independent of the frame rate."""
+
+
+def main() raises:
+    var model = Model()
+    var rt = Runtime[Model, KQueueSelector](KQueueSelector(), RENDER_HZ)
+
+    # The snake's speed is its own timer, not a consequence of how fast keys
+    # arrive. `on_tick` stays silent unless the game is actually running.
+    rt.every(STEP_HZ, STEP_TIMER)
+
+    rt.run(model)

@@ -1,16 +1,14 @@
-from mist.terminal.tty import TTY, Mode
-from mist.event.read import EventReader
-from sample.app import Model, handle_event
+from banjo.app import Runtime
+from termctl.multiplex.kqueue import KQueueSelector
+from sample.app import Model
 
-fn main() raises:
-    var tui = Model()
-    var reader = EventReader()
-    with TTY[Mode.RAW]():
-        while not tui.done:
-            tui.renderer.write(tui.view())
-            var msg = handle_event(reader.read())
-            if msg:
-                while True:
-                    msg = tui.update(msg.value())
-                    if not msg:
-                        break
+
+comptime RENDER_HZ = 60.0
+"""The ceiling on repaints. Nothing here animates on its own, so this caps how
+often the view is rebuilt after input rather than driving frames."""
+
+
+def main() raises:
+    var model = Model()
+    var rt = Runtime[Model](KQueueSelector(), RENDER_HZ)
+    rt.run(model)

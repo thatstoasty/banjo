@@ -1,72 +1,61 @@
-from utils.variant import Variant
-from sys import stdout
-from mist.terminal.tty import TTY, Mode
-from mist.event.read import EventReader
-from mist.event.event import KeyEvent, Event, Char, Enter, Up, Down, Left, Right
+from std.utils.variant import Variant
+from termctl.terminal.tty import TTY, Mode
+from termctl.event.read import EventReader
+from termctl.event.event import KeyEvent, Event, Char, Enter, Up, Down, Left, Right
 import mog
 from mog import Position, Profile, join_vertical, join_horizontal
-from banjo.renderer import Renderer
+from banjo.app import Program
 
 
 @fieldwise_init
-@register_passable("trivial")
-struct Exit(ImplicitlyCopyable):
-    var dummy: Bool
-
-    fn __init__(out self):
-        self.dummy = True
+struct Exit(TrivialRegisterPassable):
+    pass
 
 
 @fieldwise_init
-@register_passable("trivial")
-struct Start(ImplicitlyCopyable):
-    var dummy: Bool
-
-    fn __init__(out self):
-        self.dummy = True
+struct Start(TrivialRegisterPassable, Writable):
+    pass
 
 
 @fieldwise_init
-@register_passable("trivial")
-struct Restart(ImplicitlyCopyable):
-    var dummy: Bool
-
-    fn __init__(out self):
-        self.dummy = True
+struct Restart(TrivialRegisterPassable, Writable):
+    pass
 
 
 @fieldwise_init
-@register_passable("trivial")
-struct Step(ImplicitlyCopyable):
-    var dummy: Bool
-
-    fn __init__(out self):
-        self.dummy = True
+struct Step(TrivialRegisterPassable, Writable):
+    pass
 
 
 @fieldwise_init
-@register_passable("trivial")
-struct Point(ImplicitlyCopyable, Equatable):
+struct Spin(TrivialRegisterPassable, Writable):
+    """Advances the loading indicator one frame."""
+
+    pass
+
+
+@fieldwise_init
+struct Loaded(TrivialRegisterPassable, Writable):
+    """A background task's result, on its way into the model."""
+
+    var best: Int
+
+
+@fieldwise_init
+struct Point(TrivialRegisterPassable, Equatable, Writable):
     var x: Int
     var y: Int
 
-    fn __eq__(self, other: Self) -> Bool:
-        return self.x == other.x and self.y == other.y
-
 
 @fieldwise_init
-@register_passable("trivial")
-struct Direction(ImplicitlyCopyable, Equatable):
+struct Direction(TrivialRegisterPassable, Equatable, Writable):
     var value: UInt8
     comptime UP = Self(0)
     comptime DOWN = Self(1)
     comptime LEFT = Self(2)
     comptime RIGHT = Self(3)
 
-    fn __eq__(self, other: Self) -> Bool:
-        return self.value == other.value
-
-    fn is_opposite(self, b: Direction) -> Bool:
+    def is_opposite(self, b: Direction) -> Bool:
         return (
             (self == Direction.UP and b == Direction.DOWN)
             or (self == Direction.DOWN and b == Direction.UP)
@@ -76,30 +65,26 @@ struct Direction(ImplicitlyCopyable, Equatable):
 
 
 @fieldwise_init
-@register_passable("trivial")
-struct Phase(ImplicitlyCopyable, Equatable):
+struct Phase(TrivialRegisterPassable, Equatable, Writable):
     var value: UInt8
     comptime START = Self(0)
     comptime RUNNING = Self(1)
     comptime GAME_OVER = Self(2)
     comptime WON = Self(3)
 
-    fn __eq__(self, other: Self) -> Bool:
-        return self.value == other.value
-
 
 @fieldwise_init
 struct Msg(ImplicitlyCopyable):
-    var value: Variant[KeyEvent, Exit, Start, Restart, Step, Direction]
+    var value: Variant[KeyEvent, Exit, Start, Restart, Step, Spin, Loaded, Direction]
 
-    fn isa[T: Copyable](self) -> Bool:
+    def isa[T: Copyable](self) -> Bool:
         return self.value.isa[T]()
 
-    fn __getitem__[T: Copyable](ref self) -> ref [origin_of(self.value)] T:
+    def __getitem_param__[T: Copyable](ref self) -> ref[origin_of(self.value)._get_owned_interior["value"]] T:
         return self.value[T]
 
 
-fn handle_event(event: Event) raises -> Optional[Msg]:
+def handle_event(event: Event) raises -> Optional[Msg]:
     if not event.isa[KeyEvent]():
         return
 
@@ -146,20 +131,26 @@ comptime PANEL = mog.Style(
 comptime TITLE = mog.Style(Profile.ANSI, foreground=mog.Color(2))
 comptime ALERT = mog.Style(Profile.ANSI, foreground=mog.Color(1))
 comptime SUCCESS = mog.Style(Profile.ANSI, foreground=mog.Color(10))
+comptime STEP_TIMER = 0
+"""Tag for the timer that advances the snake."""
+comptime SPIN_TIMER = 1
+"""Tag for the timer that advances the loading indicator."""
+comptime SPINNER = StaticString("|/-\\")
+"""Frames of the loading indicator."""
 
 
 @fieldwise_init
-struct Snake(Movable):
+struct Snake(Movable, Writable):
     var points: List[Point]
     var direction: Direction
     var next_direction: Direction
 
-    fn __init__(out self, cx: Int, cy: Int):
+    def __init__(out self, cx: Int, cy: Int):
         self.points = [Point(cx - 2, cy), Point(cx - 1, cy), Point(cx, cy)]
         self.direction = Direction.RIGHT
         self.next_direction = Direction.RIGHT
 
-    fn has(self, point: Point) -> Bool:
+    def has(self, point: Point) -> Bool:
         for segment in self.points:
             if segment == point:
                 return True
@@ -167,18 +158,24 @@ struct Snake(Movable):
 
 
 @fieldwise_init
-struct GameState(Movable):
+struct GameState(Movable, Writable):
     var score: Int
     var turns: Int
     var seed: Int
 
-    fn reset(mut self):
+    def reset(mut self):
         self.score = 0
         self.turns = 0
 
 
+comptime SnakeMsg = Msg
+"""Module-level alias, so `Model.Msg` below does not resolve to itself."""
+
+
 @fieldwise_init
-struct Model(Movable):
+struct Model(Program):
+    comptime Msg = SnakeMsg
+
     var width: Int
     var height: Int
     var phase: Phase
@@ -186,10 +183,13 @@ struct Model(Movable):
     var food: Point
     var game: GameState
     var done: Bool
-    var renderer: Renderer
+    var best: Optional[Int]
+    """Best score, once the background task reports it."""
+    var spin: Int
+    """Frame counter for the loading indicator."""
     var board_style: mog.Style
 
-    fn __init__(out self):
+    def __init__(out self):
         self.width = 22
         self.height = 14
         self.phase = Phase.START
@@ -197,19 +197,78 @@ struct Model(Movable):
         self.food = Point(0, 0)
         self.game = GameState(score=0, turns=0, seed=7)
         self.done = False
-        self.renderer = Renderer(stdout, 24)
+        self.best = None
+        self.spin = 0
         self.board_style = mog.Style(
             Profile.ANSI,
             foreground=mog.Color(7),
             border=mog.ROUNDED_BORDER,
-        ).width(self.width * 2).height(self.height)
+        ).width(UInt16(self.width * 2)).height(UInt16(self.height))
 
-    fn reset_board(mut self):
+    @staticmethod
+    def on_event(event: Event) raises -> Optional[Msg]:
+        """Translates a terminal event into a message.
+
+        Args:
+            event: The event read from the terminal.
+
+        Returns:
+            The message to apply, or None to ignore the event.
+
+        Raises:
+            Error: If the event cannot be interpreted.
+        """
+        return handle_event(event)
+
+    def on_tick(mut self, tag: Int) raises -> Optional[Msg]:
+        """Decides what each registered timer means right now.
+
+        A paused or finished game emits no Step, so the runtime is not told the
+        view is dirty and does not rebuild a frame that would be identical.
+
+        Args:
+            tag: The tag the timer was registered with.
+
+        Returns:
+            The message to apply, or None to let this tick pass.
+        """
+        if tag == STEP_TIMER:
+            if self.phase == Phase.RUNNING:
+                return Msg(Step())
+            return None
+
+        if tag == SPIN_TIMER:
+            if self.best:
+                return None
+            return Msg(Spin())
+
+        return None
+
+    def on_result(mut self, value: Int) raises -> Optional[Msg]:
+        """Turns the background task's result into a message.
+
+        Args:
+            value: The best score the task reported.
+
+        Returns:
+            The message carrying it into the model.
+        """
+        return Msg(Loaded(value))
+
+    def is_done(self) -> Bool:
+        """Reports whether the game has been quit.
+
+        Returns:
+            True once the player has pressed q.
+        """
+        return self.done
+
+    def reset_board(mut self):
         self.snake = Snake(self.width // 2, self.height // 2)
         self.game.reset()
         self.place_food()
 
-    fn place_food(mut self):
+    def place_food(mut self):
         var open_cells = self.width * self.height - len(self.snake.points)
         if open_cells <= 0:
             self.phase = Phase.WON
@@ -232,7 +291,7 @@ struct Model(Movable):
                 x += 1
             y += 1
 
-    fn advance_snake(mut self):
+    def advance_snake(mut self):
         if self.phase != Phase.RUNNING:
             return
 
@@ -281,7 +340,7 @@ struct Model(Movable):
             self.game.score += 1
             self.place_food()
 
-    fn update(mut self, msg: Msg) -> Optional[Msg]:
+    def update(mut self, msg: Msg) raises -> Optional[Msg]:
         if msg.isa[Exit]():
             self.done = True
             return
@@ -301,15 +360,25 @@ struct Model(Movable):
             ref wanted = msg[Direction]
             if self.phase == Phase.RUNNING and not self.snake.direction.is_opposite(wanted):
                 self.snake.next_direction = wanted
-            return Msg(Step())
+            # The turn lands on the next tick. Stepping here instead would tie
+            # the snake's speed to how fast the player presses keys.
+            return
 
         if msg.isa[Step]():
             self.advance_snake()
             return
 
+        if msg.isa[Spin]():
+            self.spin += 1
+            return
+
+        if msg.isa[Loaded]():
+            self.best = msg[Loaded].best
+            return
+
         return
 
-    fn board_cell(self, x: Int, y: Int) -> String:
+    def board_cell(self, x: Int, y: Int) -> String:
         var p = Point(x, y)
         if p == self.food and self.phase == Phase.RUNNING:
             return "●"
@@ -326,11 +395,11 @@ struct Model(Movable):
 
         return "·"
 
-    fn board_view(self) -> String:
+    def board_view(self) -> String:
         var out = String(capacity=self.width * self.height * 2)
         var y = 0
         while y < self.height:
-            x = 0
+            var x = 0
             while x < self.width:
                 out.write_string(self.board_cell(x, y))
                 out.write_string(" ")
@@ -339,7 +408,22 @@ struct Model(Movable):
 
         return self.board_style.render(out)
 
-    fn view(self) -> String:
+    def best_view(self) -> String:
+        """Renders the best score, or the indicator while it is still loading.
+
+        Returns:
+            A one-line status string.
+        """
+        if self.best:
+            return String("Best: ", self.best.value())
+        if self.spin == 0:
+            # No spin timer has ticked, so nothing is loading -- this app was
+            # started without a background task. Say nothing rather than
+            # showing an indicator that will never resolve.
+            return String()
+        return String(SPINNER[byte = self.spin % 4], " loading best score...")
+
+    def view(self) raises -> String:
         comptime HELP = "Controls: W/A/S/D or H/J/K/L (Up/Down arrows supported), Space/Enter to start, R restart, Q quit"
         if self.phase == Phase.START:
             return PANEL.render(
@@ -349,13 +433,23 @@ struct Model(Movable):
                     "\n",
                     HELP,
                     "\nPress Enter or Space to begin.",
+                    self.best_view(),
                 )
             )
 
         var body = join_vertical(
             Position.LEFT,
             TITLE.render("Snake"),
-            String("Score: ", self.game.score, "   Length: ", len(self.snake.points), "   Turns: ", self.game.turns),
+            String(
+                "Score: ",
+                self.game.score,
+                "   Length: ",
+                len(self.snake.points),
+                "   Turns: ",
+                self.game.turns,
+                "   ",
+                self.best_view(),
+            ),
             "\n",
             self.board_view(),
             "\n",

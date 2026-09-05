@@ -176,3 +176,6 @@ output
 *.mojopkg
 kgen.*
 *.dSYM
+
+# Repos
+bubbles
