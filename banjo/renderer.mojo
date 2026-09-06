@@ -3,6 +3,7 @@ from mist.transform import truncate
 from termctl.terminal.sgr import CSI
 from termctl.terminal.cursor import move_cursor_sequence, ERASE_DISPLAY, cursor_up_sequence
 from termctl.terminal.screen import CLEAR_LINE_RIGHT
+from termctl.terminal.size import terminal_size
 
 comptime DEFAULT_FPS = 60.0
 comptime MAX_FPS = 120.0
@@ -83,12 +84,47 @@ struct Renderer(Copyable):
             return self.alt_lines_rendered
         return self.lines_rendered
 
+    def refresh_size(mut self) -> Bool:
+        """Re-reads the terminal's dimensions from the kernel.
+
+        One `ioctl`, a few hundred nanoseconds, touching neither the terminal
+        nor the input stream. That is cheap enough to do every frame, which is
+        why resizing needs no `SIGWINCH` handler: the next paint simply
+        measures again. A descriptor that is not a terminal leaves the
+        dimensions at zero, which disables truncation and the height clamp
+        rather than guessing at a size.
+
+        Returns:
+            True if the dimensions changed, meaning the frame must be repainted
+            even if its content did not change.
+        """
+        var measured = terminal_size(self.writer)
+        if not measured:
+            return False
+
+        ref size = measured.value()
+        if size.columns == self.width and size.rows == self.height:
+            return False
+
+        self.width = size.columns
+        self.height = size.rows
+        return True
+
     # flush renders the buffer.
     def flush(mut self):
         # r.mtx.Lock()
         # defer r.mtx.Unlock()
 
-        if self.buf.byte_length() == 0 or self.buf == self.last_render:
+        # A resize changes how the same content has to be drawn -- what gets
+        # truncated, how many lines fit -- so it has to defeat the
+        # unchanged-frame shortcut below.
+        var resized = self.refresh_size()
+
+        if self.buf.byte_length() == 0:
+            # Nothing to do.
+            return
+
+        if not resized and self.buf == self.last_render:
             # Nothing to do.
             return
 
