@@ -13,6 +13,8 @@ backend = { name = "pixi-build-mojo", version = "*" }
 spinner = "mojo -D ASSERT=all spinner.mojo"
 progress = "mojo -D ASSERT=all progress.mojo"
 table = "mojo -D ASSERT=all table.mojo"
+paginator = "mojo -D ASSERT=all paginator.mojo"
+textinput = "mojo -D ASSERT=all textinput.mojo"
 
 [dependencies]
 banjo = { path = "../.." }
