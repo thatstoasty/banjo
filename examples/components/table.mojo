@@ -96,7 +96,7 @@ struct Model(Program):
         ]
         self.table = Table(columns^, projects(), border=mog.ROUNDED_BORDER)
         self.table.border_style = mog.Style(Profile.ANSI).foreground(mog.Color(8))
-        self.table.styles.header = mog.Style(Profile.ANSI).foreground(mog.Color(6)).underline(True)
+        self.table.styles.header = mog.Style(Profile.ANSI).foreground(mog.Color(6))
         self.table.styles.selected = mog.Style(Profile.ANSI).foreground(mog.Color(5)).reverse(True)
 
         self.state = TableState()
