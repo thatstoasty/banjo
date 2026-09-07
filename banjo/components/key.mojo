@@ -38,7 +38,6 @@ def press(code: KeyCode, modifiers: KeyModifiers = KeyModifiers.NONE) -> KeyEven
     return KeyEvent(code, modifiers)
 
 
-@fieldwise_init
 struct Help(Copyable, Writable):
     """The help text for a single binding."""
 
@@ -47,10 +46,14 @@ struct Help(Copyable, Writable):
     var desc: String
     """What the keystroke does, for example `move up`."""
 
-    def __init__(out self):
+    def __init__(
+        out self,
+        var key: String = String(),
+        var desc: String = String(),
+    ):
         """Creates empty help text."""
-        self.key = String()
-        self.desc = String()
+        self.key = key^
+        self.desc = desc^
 
 
 struct Binding(Copyable):
@@ -63,7 +66,7 @@ struct Binding(Copyable):
     var disabled: Bool
     """Whether this binding is currently switched off."""
 
-    def __init__(out self, var keys: List[KeyEvent], var help: Help = Help(), disabled: Bool = False):
+    def __init__(out self, var keys: List[KeyEvent], var help: Help = Help(), *, disabled: Bool = False):
         """Creates a binding.
 
         Args:

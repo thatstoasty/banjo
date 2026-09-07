@@ -8,7 +8,7 @@ application anyway.
 
 ```mojo
 var styles = DefaultItemStyles(Profile.ANSI)
-items.append(default_item(String("Raspberry"), String("A red berry"), styles))
+items.append(default_item("Raspberry", "A red berry", styles))
 ```
 
 Both appearances are built up front, because mog renders to a string and a
@@ -66,6 +66,7 @@ def default_item(
     var title: String,
     var description: String,
     styles: DefaultItemStyles,
+    *,
     show_description: Bool = True,
 ) raises -> ListItem:
     """Builds a row showing a title and, optionally, a description beneath it.

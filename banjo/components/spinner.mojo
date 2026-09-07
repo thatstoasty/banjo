@@ -39,7 +39,7 @@ def line() -> Frames:
     Returns:
         The frame set.
     """
-    return Frames([String("|"), String("/"), String("-"), String("\\")], 10.0)
+    return Frames(["|", "/", "-", "\\"], 10.0)
 
 
 def mini_dot() -> Frames:
@@ -50,16 +50,16 @@ def mini_dot() -> Frames:
     """
     return Frames(
         [
-            String("⠋"),
-            String("⠙"),
-            String("⠹"),
-            String("⠸"),
-            String("⠼"),
-            String("⠴"),
-            String("⠦"),
-            String("⠧"),
-            String("⠇"),
-            String("⠏"),
+            "⠋",
+            "⠙",
+            "⠹",
+            "⠸",
+            "⠼",
+            "⠴",
+            "⠦",
+            "⠧",
+            "⠇",
+            "⠏",
         ],
         12.0,
     )
@@ -73,14 +73,14 @@ def dot() -> Frames:
     """
     return Frames(
         [
-            String("⣾"),
-            String("⣽"),
-            String("⣻"),
-            String("⢿"),
-            String("⡿"),
-            String("⣟"),
-            String("⣯"),
-            String("⣷"),
+            "⣾",
+            "⣽",
+            "⣻",
+            "⢿",
+            "⡿",
+            "⣟",
+            "⣯",
+            "⣷",
         ],
         10.0,
     )
@@ -93,7 +93,7 @@ def jump() -> Frames:
         The frame set.
     """
     return Frames(
-        [String("⢄"), String("⢂"), String("⢁"), String("⡁"), String("⡈"), String("⡐"), String("⡠")],
+        ["⢄", "⢂", "⢁", "⡁", "⡈", "⡐", "⡠"],
         10.0,
     )
 
@@ -104,7 +104,7 @@ def pulse() -> Frames:
     Returns:
         The frame set.
     """
-    return Frames([String("█"), String("▓"), String("▒"), String("░")], 8.0)
+    return Frames(["█", "▓", "▒", "░"], 8.0)
 
 
 def points() -> Frames:
@@ -113,7 +113,7 @@ def points() -> Frames:
     Returns:
         The frame set.
     """
-    return Frames([String("∙∙∙"), String("●∙∙"), String("∙●∙"), String("∙∙●")], 7.0)
+    return Frames(["∙∙∙", "●∙∙", "∙●∙", "∙∙●"], 7.0)
 
 
 def meter() -> Frames:
@@ -124,12 +124,12 @@ def meter() -> Frames:
     """
     return Frames(
         [
-            String("▱▱▱"),
-            String("▰▱▱"),
-            String("▰▰▱"),
-            String("▰▰▰"),
-            String("▰▰▱"),
-            String("▰▱▱"),
+            "▱▱▱",
+            "▰▱▱",
+            "▰▰▱",
+            "▰▰▰",
+            "▰▰▱",
+            "▰▱▱",
         ],
         7.0,
     )
@@ -143,14 +143,14 @@ def moon() -> Frames:
     """
     return Frames(
         [
-            String("🌑"),
-            String("🌒"),
-            String("🌓"),
-            String("🌔"),
-            String("🌕"),
-            String("🌖"),
-            String("🌗"),
-            String("🌘"),
+            "🌑",
+            "🌒",
+            "🌓",
+            "🌔",
+            "🌕",
+            "🌖",
+            "🌗",
+            "🌘",
         ],
         8.0,
     )

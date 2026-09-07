@@ -12,7 +12,7 @@ var state = ListState()
 state.select(0)
 
 var view = ListView(items)
-view.highlight_symbol = String("> ")
+view.highlight_symbol = "> "
 
 # in the app's view():
 return view.render(height=10, state=state)
@@ -253,20 +253,37 @@ struct ListView(Copyable):
     var keymap: KeyMap
     """The key bindings `update` responds to."""
 
-    def __init__(out self, var items: List[ListItem]):
+    def __init__(
+        out self,
+        var items: List[ListItem],
+        style: Optional[mog.Style] = None,
+        var highlight_style: Optional[mog.Style] = None,
+        var highlight_symbol: String = String(),
+        repeat_highlight_symbol: Bool = False,
+        direction: Direction = Direction.TOP_TO_BOTTOM,
+        scroll_padding: Int = 0,
+        var keymap: KeyMap = KeyMap(),
+    ):
         """Creates a list over the given items.
 
         Args:
             items: The rows to draw.
+            style: How to draw rows that carry no style of their own.
+            highlight_style: How to draw the selected row, if it is more than a style change.
+            highlight_symbol: Drawn to the left of the selected row.
+            repeat_highlight_symbol: Whether the symbol repeats on every line of a multi-line selected row.
+            direction: Which way the list is laid out.
+            scroll_padding: How many rows to keep visible either side of the selection.
+            keymap: The key bindings `update` responds to.
         """
         self.items = items^
-        self.style = None
-        self.highlight_style = None
-        self.highlight_symbol = String()
-        self.repeat_highlight_symbol = False
-        self.direction = Direction.TOP_TO_BOTTOM
-        self.scroll_padding = 0
-        self.keymap = KeyMap()
+        self.style = style
+        self.highlight_style = highlight_style
+        self.highlight_symbol = highlight_symbol
+        self.repeat_highlight_symbol = repeat_highlight_symbol
+        self.direction = direction
+        self.scroll_padding = scroll_padding
+        self.keymap = keymap^
 
     def update(mut self, event: KeyEvent, mut state: ListState, height: Int) raises -> Bool:
         """Applies a keystroke to the list's state and rescrolls if needed.
@@ -301,7 +318,7 @@ struct ListView(Copyable):
         self.scroll_into_view(height, state)
 
         if not before:
-            return state.selected.__bool__()
+            return Bool(state.selected)
         if not state.selected:
             return True
         return before.value() != state.selected.value()

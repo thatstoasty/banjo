@@ -20,6 +20,23 @@ return bar.view(0.42)
 import mog
 from mist.transform.ansi import string_width
 
+comptime SMALL_BUFFER_SIZE = 129
+
+
+def _write_percentage_text(percent: Float64, mut text: String):
+    """Formats the percentage as it appears after the bar.
+
+    Args:
+        percent: The proportion filled, from zero to one.
+        text: The string to write into.
+    """
+    var whole = Int(percent * 100.0 + 0.5)
+    if whole < 0:
+        whole = 0
+    if whole > 100:
+        whole = 100
+    text.write(" ", whole, "%")
+
 
 struct ProgressBar(Copyable):
     """Draws a proportion of a fixed width as a filled bar."""
@@ -39,35 +56,35 @@ struct ProgressBar(Copyable):
     var percentage_style: Optional[mog.Style]
     """How the percentage is drawn."""
 
-    def __init__(out self, width: Int = 40):
+    def __init__(
+        out self,
+        width: Int = 40,
+        full_char: String = "█",
+        empty_char: String = "░",
+        full_style: Optional[mog.Style] = None,
+        empty_style: Optional[mog.Style] = None,
+        percentage_style: Optional[mog.Style] = None,
+        *,
+        show_percentage: Bool = True,
+    ):
         """Creates a bar of the given width.
 
         Args:
             width: The total width, including the percentage if shown.
+            full_char: The character to draw for the filled portion.
+            empty_char: The character to draw for the remainder.
+            full_style: How to style the filled portion.
+            empty_style: How to style the remainder.
+            percentage_style: How to style the percentage.
+            show_percentage: Whether to write the percentage after the bar.
         """
         self.width = width
-        self.full_char = String("█")
-        self.empty_char = String("░")
-        self.show_percentage = True
-        self.full_style = None
-        self.empty_style = None
-        self.percentage_style = None
-
-    def _percentage_text(self, percent: Float64) -> String:
-        """Formats the percentage as it appears after the bar.
-
-        Args:
-            percent: The proportion filled, from zero to one.
-
-        Returns:
-            The percentage text, with a leading space.
-        """
-        var whole = Int(percent * 100.0 + 0.5)
-        if whole < 0:
-            whole = 0
-        if whole > 100:
-            whole = 100
-        return String(" ", whole, "%")
+        self.full_char = full_char
+        self.empty_char = empty_char
+        self.show_percentage = show_percentage
+        self.full_style = full_style
+        self.empty_style = empty_style
+        self.percentage_style = percentage_style
 
     def view(self, percent: Float64) raises -> String:
         """Draws the bar at the given proportion.
@@ -88,9 +105,9 @@ struct ProgressBar(Copyable):
         if ratio > 1.0:
             ratio = 1.0
 
-        var text = String()
+        var text = String(capacity=SMALL_BUFFER_SIZE)
         if self.show_percentage:
-            text = self._percentage_text(ratio)
+            _write_percentage_text(ratio, text)
 
         var bar_width = self.width - Int(string_width(text))
         if bar_width < 0:
@@ -102,15 +119,15 @@ struct ProgressBar(Copyable):
         if filled < 0:
             filled = 0
 
-        var full = String()
+        var full = String(capacity=SMALL_BUFFER_SIZE)
         for _ in range(filled):
             full.write_string(self.full_char)
 
-        var empty = String()
+        var empty = String(capacity=SMALL_BUFFER_SIZE)
         for _ in range(bar_width - filled):
             empty.write_string(self.empty_char)
 
-        var out = String()
+        var out = String(capacity=SMALL_BUFFER_SIZE)
         if self.full_style and full.byte_length() > 0:
             out.write_string(self.full_style.value().render(full))
         else:
@@ -127,4 +144,4 @@ struct ProgressBar(Copyable):
             else:
                 out.write_string(text)
 
-        return out
+        return out^
