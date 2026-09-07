@@ -20,14 +20,14 @@ way out: the loop asks the task to stop, and a task that does its work in slices
 checks `is_cancelled` between them and returns early.
 
 ```mojo
-async def load[o: MutOrigin](box: Pointer[Mailbox, o]) -> None:
+async def load[o: MutOrigin](box: Pointer[Mailbox[Int], o]) -> None:
     while more_to_do:
         if box[].is_cancelled():      # checked between slices of work
             return
         do_a_slice()
     box[].post(result)                # blocks this task's thread, not the loop
 
-var box = Mailbox()
+var box = Mailbox[Int]()
 tg.create_task(load(Pointer(to=box)))
 ...
 var result = box.take()               # None until it lands, Some exactly once
@@ -48,40 +48,52 @@ comptime _TAKEN = 2
 """The posted value has been collected."""
 
 
-struct Mailbox:
-    """A single-use, lock-free slot for handing one integer back to the loop.
+struct Mailbox[T: Movable & Deinitable](Movable):
+    """A single-use, lock-free slot for handing one value back to the loop.
 
     One task posts, the loop takes. `take` yields the value exactly once, so a
     loop can call it every frame and act only on the frame it arrives.
+
+    The payload is not itself atomic and does not need to be. Only the flag is:
+    its sequential consistency orders the payload's write before any reader can
+    observe the flag, and the reader's load before it touches the payload. That
+    is what lets a value with heap storage -- a `String`, a `List` -- be built
+    on one thread and owned by another.
+
+    Strictly one producer and one consumer. Two tasks posting to one mailbox
+    would race on the payload, which the flag does not order.
+
+    Parameters:
+        T: The type of value being handed over.
     """
 
     var state: Atomic[DType.int64]
     """Whether a value has been posted, and whether it has been collected."""
-    var value: Atomic[DType.int64]
-    """The posted value. Only meaningful once `state` reads as ready."""
+    var value: Optional[Self.T]
+    """The posted value. Only touched by the loop once `state` reads as ready."""
     var cancel_flag: Atomic[DType.int64]
     """Set by the loop to ask the task to give up early."""
 
     def __init__(out self):
         """Creates an empty mailbox."""
         self.state = Atomic[DType.int64](_PENDING)
-        self.value = Atomic[DType.int64](_PENDING)
+        self.value = None
         self.cancel_flag = Atomic[DType.int64](0)
 
-    def post(mut self, value: Int):
+    def post(mut self, var value: Self.T):
         """Publishes a value to the loop. Called once, from the task.
 
-        The value is stored before the flag that advertises it, and both stores
-        are sequentially consistent, so a loop that sees the flag is guaranteed
-        to see the value.
+        The value is stored before the flag that advertises it, and the store
+        is sequentially consistent, so a loop that sees the flag is guaranteed
+        to see a fully written value.
 
         Args:
             value: The result to hand back.
         """
-        self.value.store(Int64(value))
+        self.value = value^
         self.state.store(Int64(_READY))
 
-    def take(mut self) -> Optional[Int]:
+    def take(mut self) -> Optional[Self.T]:
         """Collects the posted value, if one has arrived. Called from the loop.
 
         Returns:
@@ -92,7 +104,7 @@ struct Mailbox:
             return None
 
         self.state.store(Int64(_TAKEN))
-        return Int(self.value.load())
+        return self.value.take()
 
     def cancel(mut self):
         """Asks the task to stop. Called from the loop, when it is shutting down.

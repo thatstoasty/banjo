@@ -24,7 +24,7 @@ comptime SPIN_HZ = 12.0
 """How often the loading indicator advances while the task is outstanding."""
 
 
-async def load_best_score[o: MutOrigin](box: Pointer[Mailbox, o]) -> None:
+async def load_best_score[o: MutOrigin](box: Pointer[Mailbox[Int], o]) -> None:
     """Stands in for a blocking call -- a request, a file read, a query.
 
     This ties up its own thread for two seconds, which is the point: the loop

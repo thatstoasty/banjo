@@ -176,8 +176,13 @@ struct Runtime[P: Program, T: Selector]:
     """The repaint cadence."""
     var timers: List[Timer]
     """Cadences registered with `every`."""
-    var box: Mailbox
-    """Where a background task leaves its result."""
+    var box: Mailbox[Int]
+    """Where a background task leaves its result.
+
+    An `Int` because that is what `Program.on_result` takes. `Mailbox` itself
+    carries anything movable, so a richer result is a matter of widening that
+    hook rather than of the mailbox.
+    """
 
     def __init__(out self, var selector: Self.T, fps: Float64) raises:
         """Creates a runtime bound to the terminal.
@@ -193,7 +198,7 @@ struct Runtime[P: Program, T: Selector]:
         self.renderer = Renderer(stdout, Int(fps))
         self.frames = Ticker(fps)
         self.timers = List[Timer]()
-        self.box = Mailbox()
+        self.box = Mailbox[Int]()
 
     def every(mut self, hz: Float64, tag: Int):
         """Registers a cadence at which the app's `on_tick` is consulted.
@@ -207,7 +212,7 @@ struct Runtime[P: Program, T: Selector]:
         """
         self.timers.append(Timer(Ticker(hz), tag))
 
-    def mailbox(mut self) -> Pointer[Mailbox, origin_of(self.box)]:
+    def mailbox(mut self) -> Pointer[Mailbox[Int], origin_of(self.box)]:
         """Hands out the mailbox a background task should post to.
 
         The runtime polls it every pass and routes what lands to `on_result`.
