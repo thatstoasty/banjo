@@ -10,7 +10,7 @@ each result, so a caller can highlight them once `mog` grows the equivalent of
 lipgloss's `StyleRunes`.
 
 ```mojo
-for ref hit in rank(String("bry"), names):
+for ref hit in rank("bry", names):
     print(names[hit.index], hit.score)
 ```
 """
@@ -25,25 +25,48 @@ comptime _LEADING_PENALTY = 1
 comptime _MAX_LEADING_PENALTY = 6
 """The most the leading penalty can subtract."""
 
+comptime A_BYTE = Byte(ord("A"))
+"""Lower bound of the ASCII uppercase range, which is all that case folding covers."""
+comptime Z_BYTE = Byte(ord("Z"))
+"""Upper bound of the ASCII uppercase range."""
 
-def _fold(text: StringSpan) -> List[String]:
-    """Splits text into codepoints, lowercasing ASCII letters.
+
+def _lowered(byte: Byte) -> Byte:
+    """Lowercases one ASCII byte, leaving anything else alone.
 
     Args:
-        text: The text to split.
+        byte: The byte to lower.
 
     Returns:
-        One lowercased string per codepoint.
+        The lowercased byte.
     """
-    var out = List[String]()
-    for codepoint in text.codepoint_slices():
-        var s = String(codepoint)
-        if s.byte_length() == 1:
-            var b = s.as_bytes()[0]
-            if b >= UInt8(ord("A")) and b <= UInt8(ord("Z")):
-                s = String(chr(Int(b) + 32))
-        out.append(s^)
-    return out^
+    if byte >= A_BYTE and byte <= Z_BYTE:
+        return byte + 32
+    return byte
+
+
+def _same_folded(left: StringSpan, right: StringSpan) -> Bool:
+    """Compares two codepoints, ignoring ASCII case.
+
+    Comparing in place rather than folding whole strings first is what keeps
+    matching allocation-free: `rank` walks every target, and folding each one
+    would allocate a string per target per query.
+
+    Only ASCII case is folded, so anything multi-byte compares as itself --
+    which is also why the two lengths differing means unequal.
+
+    Args:
+        left: One codepoint.
+        right: The other.
+
+    Returns:
+        True if they are the same letter, ignoring ASCII case.
+    """
+    if left.byte_length() != right.byte_length():
+        return False
+    if left.byte_length() == 1:
+        return _lowered(left.as_bytes()[0]) == _lowered(right.as_bytes()[0])
+    return left == right
 
 
 def _is_word_boundary(previous: StringSpan) -> Bool:
@@ -83,35 +106,70 @@ def find(pattern: StringSpan, target: StringSpan) -> Optional[Match]:
     Returns:
         The match, or None if the pattern does not appear in order.
     """
-    var needle = _fold(pattern)
-    var haystack = _fold(target)
+    return _find(_needle(pattern), target)
 
+
+def _needle(pattern: StringSpan) -> List[String]:
+    """Splits a pattern into the codepoints matching compares against.
+
+    The pattern is a user's query, so this is a handful of allocations. `rank`
+    does it once rather than once per target.
+
+    Args:
+        pattern: What the user typed.
+
+    Returns:
+        One string per codepoint.
+    """
+    var out = List[String]()
+    for codepoint in pattern.codepoint_slices():
+        out.append(String(codepoint))
+    return out^
+
+
+def _find(needle: List[String], target: StringSpan) -> Optional[Match]:
+    """Matches a prepared pattern against one target.
+
+    Args:
+        needle: The pattern's codepoints, from `_needle`.
+        target: The text to match against.
+
+    Returns:
+        The match, or None if the pattern does not appear in order.
+    """
     if len(needle) == 0:
         return Match(0, 0, List[Int]())
 
     var matched = List[Int]()
     var score = 0
     var n = 0
+    var h = 0
 
-    for h in range(len(haystack)):
+    # Only whether the previous codepoint ended a word matters, not what it
+    # was -- so keep the answer rather than a copy of the character.
+    var after_boundary = False
+
+    for codepoint in target.codepoint_slices():
         if n >= len(needle):
             break
-        if haystack[h] != needle[n]:
-            continue
 
-        if len(matched) == 0:
-            var skipped = h
-            if skipped > _MAX_LEADING_PENALTY:
-                skipped = _MAX_LEADING_PENALTY
-            score -= skipped * _LEADING_PENALTY
-        elif matched[len(matched) - 1] == h - 1:
-            score += _ADJACENT_BONUS
+        if _same_folded(codepoint, needle[n]):
+            if len(matched) == 0:
+                var skipped = h
+                if skipped > _MAX_LEADING_PENALTY:
+                    skipped = _MAX_LEADING_PENALTY
+                score -= skipped * _LEADING_PENALTY
+            elif matched[len(matched) - 1] == h - 1:
+                score += _ADJACENT_BONUS
 
-        if h > 0 and _is_word_boundary(haystack[h - 1]):
-            score += _WORD_START_BONUS
+            if h > 0 and after_boundary:
+                score += _WORD_START_BONUS
 
-        matched.append(h)
-        n += 1
+            matched.append(h)
+            n += 1
+
+        after_boundary = _is_word_boundary(codepoint)
+        h += 1
 
     if n < len(needle):
         return None
@@ -131,9 +189,11 @@ def rank(pattern: StringSpan, targets: List[String]) -> List[Match]:
     Returns:
         The matches, sorted by descending score.
     """
+    var needle = _needle(pattern)
+
     var hits = List[Match]()
     for i in range(len(targets)):
-        var hit = find(pattern, targets[i])
+        var hit = _find(needle, targets[i])
         if hit:
             var m = hit.take()
             m.index = i
