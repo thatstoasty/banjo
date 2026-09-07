@@ -94,8 +94,11 @@ struct Model(Program):
             Column(String("Language"), 12),
             Column(String("Stars"), 6),
         ]
-        self.table = Table(columns^, projects())
-        self.table.styles.header = mog.Style(Profile.ANSI).foreground(mog.Color(6)).underline(True)
+        self.table = Table(columns^, projects(), border=mog.ROUNDED_BORDER)
+        self.table.border_style = mog.Style(Profile.ANSI).foreground(mog.Color(8))
+        # No underline on the heading: the border draws a rule under it
+        # already, and the two together read as a double line.
+        self.table.styles.header = mog.Style(Profile.ANSI).foreground(mog.Color(6))
         self.table.styles.selected = mog.Style(Profile.ANSI).foreground(mog.Color(5)).reverse(True)
 
         self.state = TableState()
