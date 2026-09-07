@@ -204,44 +204,47 @@ struct Table(Copyable):
         if state.offset < 0:
             state.offset = 0
 
-    def _cell(self, text: StringSpan, width: Int) raises -> String:
-        """Fits one cell's text to its column, truncating or padding.
+    def _write_cell(self, mut out: String, text: StringSpan, width: Int) raises:
+        """Writes one cell's text, truncated or padded to its column.
 
         Args:
+            out: The buffer to write into.
             text: The cell's contents.
             width: The column width.
 
-        Returns:
-            The text at exactly `width` cells wide.
-
         Raises:
             Error: If truncation fails.
         """
-        var fitted = truncate(text, UInt(width), "…")
-        var padding = width - Int(string_width(fitted))
-        for _ in range(padding):
-            fitted.write_string(" ")
-        return fitted^
+        # `truncate` allocates, so it is only called when the text is actually
+        # too wide -- which for most cells it is not.
+        var fitted_width = Int(string_width(text))
+        if fitted_width > width:
+            var fitted = truncate(text, UInt(width), "…")
+            fitted_width = Int(string_width(fitted))
+            out.write_string(fitted)
+        else:
+            out.write_string(text)
 
-    def _row(self, cells: List[String]) raises -> String:
-        """Renders one row's cells side by side.
+        for _ in range(width - fitted_width):
+            out.write_string(" ")
+
+    def _write_row(self, mut out: String, cells: List[String]) raises:
+        """Writes one row's cells side by side.
 
         Args:
+            out: The buffer to write into.
             cells: The row's contents.
-
-        Returns:
-            The rendered row.
 
         Raises:
             Error: If truncation fails.
         """
-        var out = String()
         for i in range(len(self.columns)):
             if self.columns[i].width <= 0:
                 continue
-            var text = String() if i >= len(cells) else cells[i].copy()
-            out.write_string(self._cell(text, self.columns[i].width))
-        return out
+            if i >= len(cells):
+                self._write_cell(out, "", self.columns[i].width)
+            else:
+                self._write_cell(out, cells[i], self.columns[i].width)
 
     def header_view(self) raises -> String:
         """Renders the heading row.
@@ -255,14 +258,15 @@ struct Table(Copyable):
         if not self.show_header:
             return String()
 
-        var titles = List[String]()
+        var row = String()
         for ref column in self.columns:
-            titles.append(column.title.copy())
+            if column.width <= 0:
+                continue
+            self._write_cell(row, column.title, column.width)
 
-        var row = self._row(titles)
         if self.styles.header:
             return self.styles.header.value().render(row)
-        return row
+        return row^
 
     def render(self, height: Int, state: TableState) raises -> String:
         """Draws the table.
@@ -280,9 +284,12 @@ struct Table(Copyable):
         Raises:
             Error: If styling fails.
         """
-        var lines = List[String]()
+        # Written straight into one buffer rather than collected as a list of
+        # lines and joined.
+        var out = String()
+        var wrote_a_line = self.show_header
         if self.show_header:
-            lines.append(self.header_view())
+            out.write_string(self.header_view())
 
         if len(self.rows) > 0 and height > 0:
             # Derived defensively on a scratch copy, so a stale offset still
@@ -295,14 +302,24 @@ struct Table(Copyable):
                 end = len(self.rows)
 
             for index in range(scratch.offset, end):
-                var row = self._row(self.rows[index])
+                if wrote_a_line:
+                    out.write_string("\n")
+                wrote_a_line = True
+
                 var is_selected = scratch.selected and scratch.selected.value() == index
+                if not ((is_selected and self.styles.selected) or self.styles.cell):
+                    # Nothing to wrap the row in, so build it in place rather
+                    # than staging it in a string only to copy it out again.
+                    self._write_row(out, self.rows[index])
+                    continue
 
+                # One of the two styles is set, or the branch above would have
+                # taken it.
+                var row = String()
+                self._write_row(row, self.rows[index])
                 if is_selected and self.styles.selected:
-                    lines.append(self.styles.selected.value().render(row))
-                elif self.styles.cell:
-                    lines.append(self.styles.cell.value().render(row))
+                    out.write_string(self.styles.selected.value().render(row))
                 else:
-                    lines.append(row^)
+                    out.write_string(self.styles.cell.value().render(row))
 
-        return "\n".join(lines)
+        return out^

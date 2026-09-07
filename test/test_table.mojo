@@ -2,6 +2,8 @@ from std.testing import TestSuite, assert_equal, assert_true, assert_false
 
 from termctl.event.event import Char, Down, End, Home, KeyCode, KeyEvent, KeyModifiers, PageDown, Up
 
+import mog
+
 from banjo.components.table import Column, Table, TableState
 
 
@@ -54,6 +56,19 @@ def test_missing_cells_render_blank() raises:
     var state = TableState()
     var lines = t.render(5, state).splitlines()
     assert_equal(String(lines[1]), "x     ")
+
+
+def test_styles_wrap_the_row_and_the_selection() raises:
+    var t = _table(2)
+    t.styles.cell = mog.Style().width(16)
+    t.styles.selected = mog.Style().width(20)
+    t.show_header = False
+
+    var state = TableState()
+    state.selected = 1
+    var lines = t.render(5, state).splitlines()
+    assert_equal(String(lines[0]), "row0    0       ")
+    assert_equal(String(lines[1]), "row1    10          ")
 
 
 def test_zero_width_columns_are_skipped() raises:

@@ -474,39 +474,63 @@ struct ListView(Copyable):
         for _ in range(self.highlight_symbol.byte_length()):
             blank.write_string(" ")
 
-        var rows = List[String]()
-        for index in range(bounds[0], bounds[1]):
+        # Written straight into one buffer rather than collected as a list of
+        # rows and joined. `BOTTOM_TO_TOP` walks the window backwards instead
+        # of reversing a list afterwards, which is the same order without the
+        # rows having to exist separately to be reordered.
+        var bottom_up = self.direction == Direction.BOTTOM_TO_TOP
+        var out = String()
+        for step in range(bounds[1] - bounds[0]):
+            var index = bounds[1] - 1 - step if bottom_up else bounds[0] + step
             ref item = self.items[index]
             var is_selected = scratch.selected and scratch.selected.value() == index
 
+            if step > 0:
+                out.write_string("\n")
+
             # The selected row's style replaces rather than layers, since mog
-            # has no equivalent of lipgloss's `Inherit`.
-            var body: String
+            # has no equivalent of lipgloss's `Inherit`. Each branch writes to
+            # the buffer itself: a single `body` variable would have to hold
+            # both a borrowed content span and an owned rendered string, and
+            # those are different types.
             if is_selected and item.selected_content:
-                body = item.selected_content.value().copy()
+                self._write_row(out, item.selected_content.value(), blank, is_selected)
             elif is_selected and self.highlight_style:
-                body = self.highlight_style.value().render(item.content)
+                self._write_row(out, self.highlight_style.value().render(item.content), blank, is_selected)
             elif item.style:
-                body = item.style.value().render(item.content)
+                self._write_row(out, item.style.value().render(item.content), blank, is_selected)
             elif self.style:
-                body = self.style.value().render(item.content)
+                self._write_row(out, self.style.value().render(item.content), blank, is_selected)
             else:
-                body = item.content.copy()
+                self._write_row(out, item.content, blank, is_selected)
 
-            if self.highlight_symbol.byte_length() > 0:
-                var lines = body.splitlines()
-                var prefixed = String()
-                for i in range(len(lines)):
-                    var wanted = is_selected and (i == 0 or self.repeat_highlight_symbol)
-                    prefixed.write_string(self.highlight_symbol if wanted else blank)
-                    prefixed.write_string(String(lines[i]))
-                    if i < len(lines) - 1:
-                        prefixed.write_string("\n")
-                body = prefixed^
+        return out^
 
-            rows.append(body^)
+    def _write_row(self, mut out: String, body: StringSpan, blank: StringSpan, is_selected: Bool):
+        """Writes one item's body, prefixed with the highlight symbol.
 
-        if self.direction == Direction.BOTTOM_TO_TOP:
-            rows.reverse()
+        Takes the body as a span so that the caller can pass either an item's
+        own content or a freshly styled string without either being copied.
 
-        return "\n".join(rows)
+        Args:
+            out: The buffer to write into.
+            body: The item's rendered body, which may span several lines.
+            blank: Spaces as wide as the highlight symbol.
+            is_selected: Whether this item is the selected one.
+        """
+        if self.highlight_symbol.byte_length() == 0:
+            out.write_string(body)
+            return
+
+        var lines = body.splitlines()
+        for i in range(len(lines)):
+            # Branching rather than a ternary: the symbol is owned by `self`
+            # and `blank` is the caller's, so the two arms have different
+            # origins and cannot be picked between as one value.
+            if is_selected and (i == 0 or self.repeat_highlight_symbol):
+                out.write_string(self.highlight_symbol)
+            else:
+                out.write_string(blank)
+            out.write_string(lines[i])
+            if i < len(lines) - 1:
+                out.write_string("\n")

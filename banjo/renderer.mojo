@@ -178,20 +178,24 @@ struct Renderer(Copyable):
                 # before writing anything.
                 buf.write("\r")
 
-            var line = String(newLines[i])
-
             # Truncate lines wider than the width of the window to avoid
             # wrapping, which will mess up rendering. If we don't have the
-            # width of the window this will be ignored.
+            # width of the window this will be ignored, and the line goes out
+            # as a slice of the frame -- only the truncating branch needs a
+            # string of its own, since that is the one `truncate` allocates.
             #
             # Note that on Windows we only get the width of the window on
             # program initialization, so after a resize this won't perform
             # correctly (signal SIGWINCH is not supported on Windows).
+            var fills_the_row = False
             if self.width > 0:
-                line = truncate(line, UInt(self.width), "")
+                var line = truncate(newLines[i], UInt(self.width), "")
+                buf.write_string(line)
+                fills_the_row = string_width(line) >= UInt(self.width)
+            else:
+                buf.write_string(newLines[i])
 
-            buf.write_string(line)
-            if self.width == 0 or string_width(line) < UInt(self.width):
+            if not fills_the_row:
                 # Erase whatever the previous frame left to the right of this
                 # line, or a frame that shrinks leaves a tail behind: drawing
                 # "done" over "downloading" would otherwise read "donewnloading".

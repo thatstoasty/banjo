@@ -2,6 +2,8 @@ from std.testing import TestSuite, assert_equal, assert_true, assert_false
 
 from termctl.event.event import Char, KeyCode, KeyEvent, KeyModifiers, Down, End, Home, Up
 
+import mog
+
 from banjo.components.list import Direction, ListItem, ListState, ListView
 
 
@@ -180,6 +182,32 @@ def test_all_items_fit_when_height_allows() raises:
     var s = ListState()
     var out = v.render(10, s)
     assert_equal(len(out.splitlines()), 3)
+
+
+def test_styles_are_applied_to_the_item_body() raises:
+    # The styled branches hand `render`'s result straight to the row writer as
+    # a span, so the string has to outlive the call that produced it.
+    var items: List[ListItem] = [
+        ListItem(String("one"), style=mog.Style().width(6)),
+        ListItem(String("two")),
+    ]
+    var v = ListView(items^)
+    v.style = mog.Style().width(8)
+    v.highlight_style = mog.Style().width(10)
+
+    var state = ListState()
+    state.selected = 1
+    var lines = v.render(5, state).splitlines()
+    assert_equal(String(lines[0]), "one   ")
+    assert_equal(String(lines[1]), "two       ")
+
+
+def test_selected_content_replaces_the_body() raises:
+    var items: List[ListItem] = [ListItem(String("one"), selected_content=String("ONE"))]
+    var v = ListView(items^)
+    var state = ListState()
+    state.selected = 0
+    assert_equal(v.render(5, state), "ONE")
 
 
 def test_highlight_symbol_marks_only_the_selection() raises:
