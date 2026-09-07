@@ -21,6 +21,7 @@ from termctl.event.event import Char, KeyCode, KeyEvent, Left, PageDown, PageUp,
 from banjo.components.key import Binding, Help, matches, press
 from banjo.constants import SMALL_BUFFER_SIZE
 
+
 @fieldwise_init
 struct Layout(Equatable, TrivialRegisterPassable, Writable):
     """How the pagination is drawn."""
@@ -53,6 +54,7 @@ struct KeyMap(Copyable):
             keys=[PageDown(), Right(), Char("l")],
             help=Help("l/right", "next page"),
         )
+
 
 def _calculate_total_pages(items: UInt16, per_page: UInt16) -> UInt16:
     """Sets the page count from a number of items, rounding up.

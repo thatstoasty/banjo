@@ -90,8 +90,10 @@ struct Binding(Copyable):
         self.disabled = disabled
 
         self.keys = List[KeyEvent](capacity=len(keys))
+
         def _transfer_elements(idx: Int, var key: KeyEvent) {mut self}:
             self.keys.append(key^)
+
         keys^.consume_elements(_transfer_elements)
 
     def set_keys(mut self, var keys: List[KeyEvent]):
