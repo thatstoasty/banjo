@@ -102,6 +102,15 @@ struct Table(Copyable):
     """How the parts are drawn."""
     var show_header: Bool
     """Whether the heading row is drawn."""
+    var border: Optional[mog.Border]
+    """The box drawn around and between cells. None leaves the table unframed.
+
+    Any of `mog`'s borders works: `mog.ROUNDED_BORDER`, `mog.NORMAL_BORDER`,
+    `mog.ASCII_BORDER` and so on. The characters are used the way `mog.Table`
+    uses them, so a border looks the same drawn by either.
+    """
+    var border_style: Optional[mog.Style]
+    """How the border characters are drawn."""
     var keymap: KeyMap
     """The key bindings `update` responds to."""
 
@@ -113,6 +122,8 @@ struct Table(Copyable):
         keymap: KeyMap = KeyMap(),
         *,
         show_header: Bool = True,
+        border: Optional[mog.Border] = None,
+        border_style: Optional[mog.Style] = None,
     ):
         """Creates a table.
 
@@ -122,11 +133,15 @@ struct Table(Copyable):
             styles: The styles for the table.
             keymap: The key bindings for the table.
             show_header: Whether to show the header row.
+            border: The box to draw around and between cells, if any.
+            border_style: How to draw the border characters.
         """
         self.columns = columns^
         self.rows = rows^
         self.styles = styles.copy()
         self.show_header = show_header
+        self.border = border.copy()
+        self.border_style = border_style.copy()
         self.keymap = keymap.copy()
 
     def selected_row(self, state: TableState) -> Optional[List[String]]:
@@ -243,23 +258,83 @@ struct Table(Copyable):
         for _ in range(width - fitted_width):
             out.write_string(" ")
 
-    def _write_row(self, mut out: String, cells: List[String]) raises:
+    def _write_row(self, mut out: String, cells: List[String], separator: StringSpan) raises:
         """Writes one row's cells side by side.
+
+        The separator goes between cells but not at the ends, so the caller
+        owns the outer edges and can draw them in the border's style rather
+        than the row's.
 
         Args:
             out: The buffer to write into.
             cells: The row's contents.
+            separator: Drawn between one cell and the next.
 
         Raises:
             Error: If truncation fails.
         """
+        var first = True
         for i in range(len(self.columns)):
             if self.columns[i].width <= 0:
                 continue
+            if not first:
+                out.write_string(separator)
+            first = False
             if i >= len(cells):
                 self._write_cell(out, "", self.columns[i].width)
             else:
                 self._write_cell(out, cells[i], self.columns[i].width)
+
+    def _write_edge(self, mut out: String, character: StringSpan) raises:
+        """Writes one border character, in the border's style if there is one.
+
+        Args:
+            out: The buffer to write into.
+            character: The character to write.
+
+        Raises:
+            Error: If styling fails.
+        """
+        if self.border_style:
+            out.write_string(self.border_style.value().render(character))
+        else:
+            out.write_string(character)
+
+    def _write_rule(
+        self, mut out: String, left: StringSpan, fill: StringSpan, join: StringSpan, right: StringSpan
+    ) raises:
+        """Writes one horizontal rule spanning every visible column.
+
+        Built whole and styled once, rather than a character at a time: a rule
+        is uniform, so one `render` covers it.
+
+        Args:
+            out: The buffer to write into.
+            left: The corner or tee that starts the rule.
+            fill: Repeated across each column, once per cell of width.
+            join: Drawn where two columns meet.
+            right: The corner or tee that ends the rule.
+
+        Raises:
+            Error: If styling fails.
+        """
+        var rule = String()
+        rule.write_string(left)
+        var first = True
+        for ref column in self.columns:
+            if column.width <= 0:
+                continue
+            if not first:
+                rule.write_string(join)
+            first = False
+            for _ in range(column.width):
+                rule.write_string(fill)
+        rule.write_string(right)
+
+        if self.border_style:
+            out.write_string(self.border_style.value().render(rule))
+        else:
+            out.write_string(rule)
 
     def header_view(self) raises -> String:
         """Renders the heading row.
@@ -273,10 +348,18 @@ struct Table(Copyable):
         if not self.show_header:
             return String()
 
+        var separator = String()
+        if self.border:
+            separator = self.border.value().left.copy()
+
         var row = String()
+        var first = True
         for ref column in self.columns:
             if column.width <= 0:
                 continue
+            if not first:
+                row.write_string(separator)
+            first = False
             self._write_cell(row, column.title, column.width)
 
         if self.styles.header:
@@ -290,7 +373,8 @@ struct Table(Copyable):
 
         Args:
             height: How many body rows to draw. The heading, when shown, is
-                drawn above these rather than counted among them.
+                drawn above these rather than counted among them, and so are
+                the border's rules.
             state: The selection and scroll position.
 
         Returns:
@@ -302,9 +386,31 @@ struct Table(Copyable):
         # Written straight into one buffer rather than collected as a list of
         # lines and joined.
         var out = String()
-        var wrote_a_line = self.show_header
+        var wrote_a_line = False
+
+        # The separator between cells is the border's own vertical bar, and it
+        # sits inside the row rather than around it, so a selected row's style
+        # runs unbroken across the whole width.
+        var separator = String()
+        if self.border:
+            ref box = self.border.value()
+            self._write_rule(out, box.top_left, box.top, box.middle_top, box.top_right)
+            wrote_a_line = True
+            separator = box.left.copy()
+
         if self.show_header:
+            if wrote_a_line:
+                out.write_string("\n")
+            wrote_a_line = True
+            if self.border:
+                self._write_edge(out, self.border.value().left)
             out.write_string(self.header_view())
+            if self.border:
+                self._write_edge(out, self.border.value().right)
+
+                ref box = self.border.value()
+                out.write_string("\n")
+                self._write_rule(out, box.middle_left, box.bottom, box.middle, box.middle_right)
 
         if len(self.rows) > 0 and height > 0:
             # Derived defensively on a scratch copy, so a stale offset still
@@ -321,20 +427,31 @@ struct Table(Copyable):
                     out.write_string("\n")
                 wrote_a_line = True
 
+                if self.border:
+                    self._write_edge(out, self.border.value().left)
+
                 var is_selected = scratch.selected and scratch.selected.value() == index
                 if not ((is_selected and self.styles.selected) or self.styles.cell):
                     # Nothing to wrap the row in, so build it in place rather
                     # than staging it in a string only to copy it out again.
-                    self._write_row(out, self.rows[index])
-                    continue
-
-                # One of the two styles is set, or the branch above would have
-                # taken it.
-                var row = String()
-                self._write_row(row, self.rows[index])
-                if is_selected and self.styles.selected:
-                    out.write_string(self.styles.selected.value().render(row))
+                    self._write_row(out, self.rows[index], separator)
                 else:
-                    out.write_string(self.styles.cell.value().render(row))
+                    # One of the two styles is set, or the branch above would
+                    # have taken it.
+                    var row = String()
+                    self._write_row(row, self.rows[index], separator)
+                    if is_selected and self.styles.selected:
+                        out.write_string(self.styles.selected.value().render(row))
+                    else:
+                        out.write_string(self.styles.cell.value().render(row))
+
+                if self.border:
+                    self._write_edge(out, self.border.value().right)
+
+        if self.border:
+            ref box = self.border.value()
+            if wrote_a_line:
+                out.write_string("\n")
+            self._write_rule(out, box.bottom_left, box.bottom, box.middle_bottom, box.bottom_right)
 
         return out^

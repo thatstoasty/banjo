@@ -71,6 +71,80 @@ def test_styles_wrap_the_row_and_the_selection() raises:
     assert_equal(String(lines[1]), "row1    10          ")
 
 
+def _bordered(border: mog.Border, rows: Int = 2, show_header: Bool = True) raises -> Table:
+    var columns: List[Column] = [Column(String("Name"), 6), Column(String("Qty"), 4)]
+    var body = List[List[String]]()
+    for i in range(rows):
+        var cells: List[String] = [String("row", i), String(i * 10)]
+        body.append(cells^)
+    return Table(columns^, body^, show_header=show_header, border=border)
+
+
+def test_border_frames_the_table() raises:
+    var lines = _bordered(mog.NORMAL_BORDER).render(5, TableState()).splitlines()
+    assert_equal(String(lines[0]), "┌──────┬────┐")
+    assert_equal(String(lines[1]), "│Name  │Qty │")
+    assert_equal(String(lines[2]), "├──────┼────┤")
+    assert_equal(String(lines[3]), "│row0  │0   │")
+    assert_equal(String(lines[4]), "│row1  │10  │")
+    assert_equal(String(lines[5]), "└──────┴────┘")
+
+
+def test_border_without_a_header_has_no_middle_rule() raises:
+    var lines = _bordered(mog.NORMAL_BORDER, show_header=False).render(5, TableState()).splitlines()
+    assert_equal(len(lines), 4)
+    assert_equal(String(lines[0]), "┌──────┬────┐")
+    assert_equal(String(lines[1]), "│row0  │0   │")
+    assert_equal(String(lines[3]), "└──────┴────┘")
+
+
+def test_border_rules_are_not_counted_against_the_height() raises:
+    # `height` is body rows, as it is without a border. The rules are extra,
+    # the same way the heading already is.
+    # top rule, heading, middle rule, three body rows, bottom rule.
+    var lines = _bordered(mog.NORMAL_BORDER, rows=10).render(3, TableState()).splitlines()
+    assert_equal(len(lines), 7)
+
+
+def test_border_skips_zero_width_columns() raises:
+    var columns: List[Column] = [Column(String("A"), 3), Column(String("hidden"), 0)]
+    var body = List[List[String]]()
+    var cells: List[String] = [String("x"), String("y")]
+    body.append(cells^)
+    var t = Table(columns^, body^, border=mog.NORMAL_BORDER)
+
+    var lines = t.render(5, TableState()).splitlines()
+    assert_equal(String(lines[0]), "┌───┐")
+    assert_equal(String(lines[1]), "│A  │")
+    assert_equal(String(lines[3]), "│x  │")
+    assert_equal(String(lines[4]), "└───┘")
+
+
+def test_a_selected_row_is_styled_across_the_separators() raises:
+    # The separator sits inside the row, so a selection highlight runs the
+    # whole width rather than being broken in two by the bar.
+    var columns: List[Column] = [Column(String("A"), 2), Column(String("B"), 2)]
+    var body = List[List[String]]()
+    var cells: List[String] = [String("x"), String("y")]
+    body.append(cells^)
+    var t = Table(columns^, body^, show_header=False, border=mog.NORMAL_BORDER)
+    t.styles.selected = mog.Style(mog.Profile.ANSI).reverse()
+
+    var state = TableState()
+    state.selected = 0
+    var lines = t.render(5, state).splitlines()
+    assert_equal(String(lines[1]), "│\x1b[7mx │y \x1b[0m│")
+
+
+def test_border_style_wraps_the_rules() raises:
+    var t = _bordered(mog.NORMAL_BORDER, show_header=False)
+    t.border_style = mog.Style(mog.Profile.ANSI).foreground(mog.Color(5))
+    var lines = t.render(5, TableState()).splitlines()
+    assert_equal(String(lines[0]), "\x1b[35m┌──────┬────┐\x1b[0m")
+    # The edges of a row are styled too, but the cells are left alone.
+    assert_equal(String(lines[1]), "\x1b[35m│\x1b[0mrow0  │0   \x1b[35m│\x1b[0m")
+
+
 def test_zero_width_columns_are_skipped() raises:
     var columns: List[Column] = [Column(String("A"), 3), Column(String("hidden"), 0)]
     var body = List[List[String]]()
