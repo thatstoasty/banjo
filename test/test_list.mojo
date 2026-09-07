@@ -222,6 +222,20 @@ def test_highlight_symbol_marks_only_the_selection() raises:
     assert_equal(String(lines[2]), "  item 2")
 
 
+def test_highlight_symbol_is_padded_by_width_not_bytes() raises:
+    # "\u25b6 " is two columns wide but four bytes long. Padding unselected rows
+    # by the byte count indents them past the selected one.
+    var items: List[ListItem] = [ListItem(String("one")), ListItem(String("two"))]
+    var v = ListView(items^)
+    v.highlight_symbol = String("\u25b6 ")
+    var state = ListState()
+    state.selected = 0
+
+    var lines = v.render(5, state).splitlines()
+    assert_equal(String(lines[0]), "\u25b6 one")
+    assert_equal(String(lines[1]), "  two")
+
+
 def test_highlight_symbol_on_multiline_item() raises:
     var items = List[ListItem]()
     items.append(ListItem(String("a\nb")))

@@ -23,6 +23,7 @@ collection and would be shadowed inside this module.
 """
 
 import mog
+from mist.transform.ansi import string_width
 
 from banjo.components.key import Binding, Help, matches, press
 from termctl.event.event import Char, Down, End, Home, KeyEvent, PageDown, PageUp, Up
@@ -470,8 +471,11 @@ struct ListView(Copyable):
 
         var scratch = state.copy()
         var bounds = self._visible_bounds(height, scratch)
+        # As wide as the symbol is drawn, not as many bytes as it takes to
+        # encode: "> " is two of each, but "\u25b6 " is two columns in four
+        # bytes, and padding by bytes indents every unselected row too far.
         var blank = String()
-        for _ in range(self.highlight_symbol.byte_length()):
+        for _ in range(Int(string_width(self.highlight_symbol))):
             blank.write_string(" ")
 
         # Written straight into one buffer rather than collected as a list of
