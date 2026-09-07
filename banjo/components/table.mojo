@@ -42,7 +42,6 @@ struct Column(Copyable):
     """How many cells wide the column is. Content is truncated to fit."""
 
 
-@fieldwise_init
 struct TableStyles(Copyable):
     """How the parts of a table are drawn."""
 
@@ -53,11 +52,16 @@ struct TableStyles(Copyable):
     var selected: Optional[mog.Style]
     """The selected row, in place of `cell`."""
 
-    def __init__(out self):
+    def __init__(
+        out self,
+        var header: Optional[mog.Style] = None,
+        var cell: Optional[mog.Style] = None,
+        var selected: Optional[mog.Style] = None,
+    ):
         """Creates unstyled table styles."""
-        self.header = None
-        self.cell = None
-        self.selected = None
+        self.header = header^
+        self.cell = cell^
+        self.selected = selected^
 
 
 @fieldwise_init
@@ -79,12 +83,12 @@ struct KeyMap(Copyable):
 
     def __init__(out self):
         """Creates the default bindings."""
-        self.up = Binding([press(Up()), press(Char("k"))], Help("up/k", "up"))
-        self.down = Binding([press(Down()), press(Char("j"))], Help("down/j", "down"))
-        self.page_up = Binding([press(PageUp()), press(Char("b"))], Help("pgup/b", "page up"))
-        self.page_down = Binding([press(PageDown()), press(Char("f"))], Help("pgdn/f", "page down"))
-        self.first = Binding([press(Home()), press(Char("g"))], Help("home/g", "go to start"))
-        self.last = Binding([press(End()), press(Char("G"))], Help("end/G", "go to end"))
+        self.up = Binding(keys=[Up(), Char("k")], help=Help("up/k", "up"))
+        self.down = Binding(keys=[Down(), Char("j")], help=Help("down/j", "down"))
+        self.page_up = Binding(keys=[PageUp(), Char("b")], help=Help("pgup/b", "page up"))
+        self.page_down = Binding(keys=[PageDown(), Char("f")], help=Help("pgdn/f", "page down"))
+        self.first = Binding(keys=[Home(), Char("g")], help=Help("home/g", "go to start"))
+        self.last = Binding(keys=[End(), Char("G")], help=Help("end/G", "go to end"))
 
 
 struct Table(Copyable):
@@ -101,18 +105,29 @@ struct Table(Copyable):
     var keymap: KeyMap
     """The key bindings `update` responds to."""
 
-    def __init__(out self, var columns: List[Column], var rows: List[List[String]]):
+    def __init__(
+        out self,
+        var columns: List[Column],
+        var rows: List[List[String]],
+        styles: TableStyles = TableStyles(),
+        keymap: KeyMap = KeyMap(),
+        *,
+        show_header: Bool = True,
+    ):
         """Creates a table.
 
         Args:
             columns: The columns, in order.
             rows: The body, one list of cells per row.
+            styles: The styles for the table.
+            keymap: The key bindings for the table.
+            show_header: Whether to show the header row.
         """
         self.columns = columns^
         self.rows = rows^
-        self.styles = TableStyles()
-        self.show_header = True
-        self.keymap = KeyMap()
+        self.styles = styles.copy()
+        self.show_header = show_header
+        self.keymap = keymap.copy()
 
     def selected_row(self, state: TableState) -> Optional[List[String]]:
         """Returns the selected row, if there is one.
@@ -204,7 +219,7 @@ struct Table(Copyable):
         if state.offset < 0:
             state.offset = 0
 
-    def _write_cell(self, mut out: String, text: StringSpan, width: Int) raises:
+    def _write_cell(self, mut out: String, text: ImmStringSpan, width: Int) raises:
         """Writes one cell's text, truncated or padded to its column.
 
         Args:

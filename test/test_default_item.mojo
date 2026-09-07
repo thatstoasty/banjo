@@ -2,7 +2,7 @@ from std.testing import TestSuite, assert_equal, assert_true, assert_false
 
 from mog import Profile
 
-from banjo.components.defaultitem import DefaultItemStyles, default_item
+from banjo.components.default_item import DefaultItemStyles, default_item
 
 
 def _styles() raises -> DefaultItemStyles:

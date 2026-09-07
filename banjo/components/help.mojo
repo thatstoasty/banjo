@@ -67,12 +67,12 @@ struct HelpView(Copyable):
             width: The width to fit within, or zero for unlimited.
         """
         self.width = width
-        self.short_separator = String(" • ")
-        self.full_separator = String("    ")
-        self.ellipsis = String("…")
+        self.short_separator = " • "
+        self.full_separator = "    "
+        self.ellipsis = "…"
         self.styles = HelpStyles()
 
-    def _styled(self, style: Optional[mog.Style], text: StringSpan) raises -> String:
+    def _styled(self, style: Optional[mog.Style], text: ImmStringSpan) raises -> String:
         """Applies a style if one is set.
 
         Args:

@@ -2,7 +2,7 @@ from std.testing import TestSuite, assert_equal, assert_true, assert_false
 
 from termctl.event.event import Backspace, Char, Delete, End, Home, KeyCode, KeyEvent, KeyModifiers, Left, Right
 
-from banjo.components.textinput import TextInput
+from banjo.components.text_input import TextInput
 
 
 def _key(code: KeyCode, modifiers: KeyModifiers = KeyModifiers.NONE) -> KeyEvent:

@@ -14,6 +14,7 @@ for ref hit in rank("bry", names):
     print(names[hit.index], hit.score)
 ```
 """
+from std.collections.string.iterators import GraphemeSliceIter
 
 
 comptime _ADJACENT_BONUS = 8
@@ -45,8 +46,8 @@ def _lowered(byte: Byte) -> Byte:
     return byte
 
 
-def _same_folded(left: StringSpan, right: StringSpan) -> Bool:
-    """Compares two codepoints, ignoring ASCII case.
+def _same_folded(left: ImmStringSpan, right: ImmStringSpan) -> Bool:
+    """Compares two grapheme clusters, ignoring ASCII case.
 
     Comparing in place rather than folding whole strings first is what keeps
     matching allocation-free: `rank` walks every target, and folding each one
@@ -56,7 +57,7 @@ def _same_folded(left: StringSpan, right: StringSpan) -> Bool:
     which is also why the two lengths differing means unequal.
 
     Args:
-        left: One codepoint.
+        left: One cluster.
         right: The other.
 
     Returns:
@@ -69,7 +70,7 @@ def _same_folded(left: StringSpan, right: StringSpan) -> Bool:
     return left == right
 
 
-def _is_word_boundary(previous: StringSpan) -> Bool:
+def _is_word_boundary(previous: ImmStringSpan) -> Bool:
     """Reports whether a character following `previous` starts a word.
 
     Args:
@@ -90,10 +91,14 @@ struct Match(Copyable):
     var score: Int
     """How good the match is. Higher is better."""
     var matched: List[Int]
-    """Codepoint positions in the target that the pattern matched."""
+    """Grapheme positions in the target that the pattern matched.
+
+    Counted in clusters rather than codepoints or bytes, so a caller can use
+    them as column offsets when highlighting what matched.
+    """
 
 
-def find(pattern: StringSpan, target: StringSpan) -> Optional[Match]:
+def find(pattern: ImmStringSpan, target: ImmStringSpan) -> Optional[Match]:
     """Matches a pattern against one target.
 
     An empty pattern matches everything with a score of zero, which lets a
@@ -106,54 +111,47 @@ def find(pattern: StringSpan, target: StringSpan) -> Optional[Match]:
     Returns:
         The match, or None if the pattern does not appear in order.
     """
-    return _find(_needle(pattern), target)
+    return _find(pattern.graphemes(), target)
 
 
-def _needle(pattern: StringSpan) -> List[String]:
-    """Splits a pattern into the codepoints matching compares against.
-
-    The pattern is a user's query, so this is a handful of allocations. `rank`
-    does it once rather than once per target.
-
-    Args:
-        pattern: What the user typed.
-
-    Returns:
-        One string per codepoint.
-    """
-    var out = List[String]()
-    for codepoint in pattern.codepoint_slices():
-        out.append(String(codepoint))
-    return out^
-
-
-def _find(needle: List[String], target: StringSpan) -> Optional[Match]:
+def _find[origin: ImmOrigin, //](var needle: GraphemeSliceIter[origin], target: ImmStringSpan) -> Optional[Match]:
     """Matches a prepared pattern against one target.
 
+    Takes the iterator by value, so matching walks a copy and the caller's own
+    position is untouched. `rank` matches one pattern against many targets, and
+    a shared iterator would be eaten by the first of them, leaving every later
+    target to match against nothing. Copying is free: an iterator is a pointer
+    and a length, which is what makes building it once still worth doing.
+
     Args:
-        needle: The pattern's codepoints, from `_needle`.
+        needle: The pattern's grapheme clusters.
         target: The text to match against.
 
     Returns:
         The match, or None if the pattern does not appear in order.
     """
-    if len(needle) == 0:
-        return Match(0, 0, List[Int]())
+    # Held rather than peeked at. The cluster being looked for only changes
+    # when one is found, so reading it once per match beats re-reading it on
+    # every character of the target -- and `GraphemeSliceIter` has no
+    # `peek_next`, which is what makes this the shape to write.
+    var wanted = needle.next()
+    if not wanted:
+        return Match(0, 0, [])
 
     var matched = List[Int]()
     var score = 0
-    var n = 0
     var h = 0
 
-    # Only whether the previous codepoint ended a word matters, not what it
+    # Only whether the previous cluster ended a word matters, not what it
     # was -- so keep the answer rather than a copy of the character.
     var after_boundary = False
 
-    for codepoint in target.codepoint_slices():
-        if n >= len(needle):
+    for grapheme in target.graphemes():
+        # Nothing left to look for means the whole pattern has been found.
+        if not wanted:
             break
 
-        if _same_folded(codepoint, needle[n]):
+        if _same_folded(grapheme, wanted.value()):
             if len(matched) == 0:
                 var skipped = h
                 if skipped > _MAX_LEADING_PENALTY:
@@ -166,17 +164,17 @@ def _find(needle: List[String], target: StringSpan) -> Optional[Match]:
                 score += _WORD_START_BONUS
 
             matched.append(h)
-            n += 1
+            wanted = needle.next()
 
-        after_boundary = _is_word_boundary(codepoint)
+        after_boundary = _is_word_boundary(grapheme)
         h += 1
 
-    if n < len(needle):
+    if wanted:
         return None
     return Match(0, score, matched^)
 
 
-def rank(pattern: StringSpan, targets: List[String]) -> List[Match]:
+def rank(pattern: ImmStringSpan, targets: List[String]) -> List[Match]:
     """Matches a pattern against every target, best first.
 
     Ties keep the original order, so an empty pattern returns the targets
@@ -189,11 +187,11 @@ def rank(pattern: StringSpan, targets: List[String]) -> List[Match]:
     Returns:
         The matches, sorted by descending score.
     """
-    var needle = _needle(pattern)
+    var needle = pattern.graphemes()
 
     var hits = List[Match]()
     for i in range(len(targets)):
-        var hit = _find(needle, targets[i])
+        var hit = _find(needle.copy(), targets[i])
         if hit:
             var m = hit.take()
             m.index = i

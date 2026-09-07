@@ -1,0 +1,1 @@
+comptime SMALL_BUFFER_SIZE = 128

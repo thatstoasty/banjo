@@ -12,7 +12,7 @@ from std.utils.variant import Variant
 from banjo.app import Program, Runtime
 from banjo.components.help import HelpView
 from banjo.components.key import Binding, Help, matches, press
-from banjo.components.textinput import TextInput
+from banjo.components.text_input import TextInput
 from termctl.event.event import Char, Esc, Event, KeyEvent, Tab
 from termctl.multiplex.kqueue import KQueueSelector
 import mog

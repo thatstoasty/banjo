@@ -29,17 +29,13 @@ def entries() -> List[String]:
     Returns:
         The entries, in order.
     """
-    var out = List[String]()
-    var names: List[String] = [
-        String("aardvark"), String("badger"), String("capybara"), String("dormouse"),
-        String("echidna"), String("ferret"), String("gerbil"), String("hedgehog"),
-        String("ibex"), String("jerboa"), String("kinkajou"), String("lemur"),
-        String("marmot"), String("numbat"), String("ocelot"), String("pangolin"),
-        String("quokka"), String("raccoon"), String("serval"), String("tapir"),
+    return [
+        "aardvark", "badger", "capybara", "dormouse",
+        "echidna", "ferret", "gerbil", "hedgehog",
+        "ibex", "jerboa", "kinkajou", "lemur",
+        "marmot", "numbat", "ocelot", "pangolin",
+        "quokka", "raccoon", "serval", "tapir",
     ]
-    for name in names:
-        out.append(name.copy())
-    return out^
 
 
 @fieldwise_init
@@ -69,11 +65,9 @@ struct Model(Program):
     var done: Bool
 
     def __init__(out self) raises:
-        self.pages = Paginator(per_page=PER_PAGE)
-        _ = self.pages.set_total_pages(len(entries()))
-
-        self.dots = Paginator(layout=Layout.DOTS, per_page=PER_PAGE)
-        _ = self.dots.set_total_pages(len(entries()))
+        var items = len(entries())
+        self.pages = Paginator(items=UInt16(items), per_page=PER_PAGE)
+        self.dots = Paginator(items=UInt16(items), layout=Layout.DOTS, per_page=PER_PAGE)
         self.dots.active_dot = mog.Style(Profile.ANSI).foreground(mog.Color(5)).render("●")
         self.dots.inactive_dot = mog.Style(Profile.ANSI).foreground(mog.Color(8)).render("○")
 
@@ -81,7 +75,7 @@ struct Model(Program):
         self.bindings = [
             self.pages.keymap.prev_page.copy(),
             self.pages.keymap.next_page.copy(),
-            Binding([press(Char("q"))], Help("q", "quit")),
+            Binding(keys=[Char("q")], help=Help("q", "quit")),
         ]
         self.done = False
 
@@ -113,7 +107,7 @@ struct Model(Program):
 
     def view(self) raises -> String:
         var all = entries()
-        var bounds = self.pages.slice_bounds(len(all))
+        var bounds = self.pages.slice_bounds(UInt16(len(all)))
 
         var body = String()
         for i in range(bounds[0], bounds[1]):
@@ -129,9 +123,9 @@ struct Model(Program):
             "   page ",
             self.pages.view(),
             "   showing ",
-            self.pages.items_on_page(len(all)),
+            self.pages.items_on_page(UInt16(len(all))),
             " of ",
-            len(all),
+            UInt16(len(all)),
             "\n",
             self.help.short_view(self.bindings),
         )

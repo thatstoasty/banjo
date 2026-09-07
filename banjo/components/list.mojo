@@ -25,6 +25,7 @@ collection and would be shadowed inside this module.
 import mog
 from mist.transform.ansi import string_width
 
+from banjo.constants import SMALL_BUFFER_SIZE
 from banjo.components.key import Binding, Help, matches, press
 from termctl.event.event import Char, Down, End, Home, KeyEvent, PageDown, PageUp, Up
 
@@ -110,10 +111,14 @@ struct ListState(Copyable):
     var selected: Optional[Int]
     """Index of the selected item, if any."""
 
-    def __init__(out self):
+    def __init__(
+        out self,
+        offset: Int = 0,
+        selected: Optional[Int] = None,
+    ):
         """Creates an unscrolled state with nothing selected."""
-        self.offset = 0
-        self.selected = None
+        self.offset = offset
+        self.selected = selected
 
     def select(mut self, index: Optional[Int]):
         """Selects an item, or clears the selection.
@@ -226,12 +231,12 @@ struct KeyMap(Copyable):
 
     def __init__(out self):
         """Creates the default bindings."""
-        self.up = Binding([press(Up()), press(Char("k"))], Help("up/k", "up"))
-        self.down = Binding([press(Down()), press(Char("j"))], Help("down/j", "down"))
-        self.page_up = Binding([press(PageUp()), press(Char("b"))], Help("pgup/b", "page up"))
-        self.page_down = Binding([press(PageDown()), press(Char("f"))], Help("pgdn/f", "page down"))
-        self.first = Binding([press(Home()), press(Char("g"))], Help("home/g", "go to start"))
-        self.last = Binding([press(End()), press(Char("G"))], Help("end/G", "go to end"))
+        self.up = Binding(help=Help("up/k", "up"), keys=[Up(), Char("k")])
+        self.down = Binding(help=Help("down/j", "down"), keys=[Down(), Char("j")])
+        self.page_up = Binding(help=Help("pgup/b", "page up"), keys=[PageUp(), Char("b")])
+        self.page_down = Binding(help=Help("pgdn/f", "page down"), keys=[PageDown(), Char("f")])
+        self.first = Binding(help=Help("home/g", "go to start"), keys=[Home(), Char("g")])
+        self.last = Binding(help=Help("end/G", "go to end"), keys=[End(), Char("G")])
 
 
 struct ListView(Copyable):
@@ -260,10 +265,11 @@ struct ListView(Copyable):
         style: Optional[mog.Style] = None,
         var highlight_style: Optional[mog.Style] = None,
         var highlight_symbol: String = String(),
-        repeat_highlight_symbol: Bool = False,
         direction: Direction = Direction.TOP_TO_BOTTOM,
         scroll_padding: Int = 0,
         var keymap: KeyMap = KeyMap(),
+        *,
+        repeat_highlight_symbol: Bool = False,
     ):
         """Creates a list over the given items.
 
@@ -272,10 +278,10 @@ struct ListView(Copyable):
             style: How to draw rows that carry no style of their own.
             highlight_style: How to draw the selected row, if it is more than a style change.
             highlight_symbol: Drawn to the left of the selected row.
-            repeat_highlight_symbol: Whether the symbol repeats on every line of a multi-line selected row.
             direction: Which way the list is laid out.
             scroll_padding: How many rows to keep visible either side of the selection.
             keymap: The key bindings `update` responds to.
+            repeat_highlight_symbol: Whether the symbol repeats on every line of a multi-line selected row.
         """
         self.items = items^
         self.style = style
@@ -475,7 +481,7 @@ struct ListView(Copyable):
         # encode: "> " is two of each, but "\u25b6 " is two columns in four
         # bytes, and padding by bytes indents every unselected row too far.
         var blank = String()
-        for _ in range(Int(string_width(self.highlight_symbol))):
+        for _ in range(string_width(self.highlight_symbol)):
             blank.write_string(" ")
 
         # Written straight into one buffer rather than collected as a list of
@@ -483,7 +489,7 @@ struct ListView(Copyable):
         # of reversing a list afterwards, which is the same order without the
         # rows having to exist separately to be reordered.
         var bottom_up = self.direction == Direction.BOTTOM_TO_TOP
-        var out = String()
+        var out = String(capacity=SMALL_BUFFER_SIZE)
         for step in range(bounds[1] - bounds[0]):
             var index = bounds[1] - 1 - step if bottom_up else bounds[0] + step
             ref item = self.items[index]
@@ -510,7 +516,7 @@ struct ListView(Copyable):
 
         return out^
 
-    def _write_row(self, mut out: String, body: StringSpan, blank: StringSpan, is_selected: Bool):
+    def _write_row(self, mut out: String, body: ImmStringSpan, blank: ImmStringSpan, is_selected: Bool):
         """Writes one item's body, prefixed with the highlight symbol.
 
         Takes the body as a span so that the caller can pass either an item's

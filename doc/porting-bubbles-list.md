@@ -94,7 +94,7 @@ conflict, since a state-external component is perfectly drivable from inside
   `filter.rank` is a subsequence matcher scoring adjacency, word starts and
   early matches. Filtering stays an application concern: rank the titles, hand
   the widget a shorter list. `bubbles` instead builds filtering into the list
-  model and pulls in `textinput`, `cursor` and `internal` -- about 2,000 lines
+  model and pulls in `text_input`, `cursor` and `internal` -- about 2,000 lines
   -- for the query box alone.
 
   Like `ListView.render`, `TextInput.view` is pure, because `Program.view`
@@ -102,7 +102,7 @@ conflict, since a state-external component is perfectly drivable from inside
 
 The ratatui contract deletes most of what the bubbles-shaped plan needed.
 Spinners, status messages and the `Cmd` machinery leave the component entirely,
-and with them the whole `textinput` dependency.
+and with them the whole `text_input` dependency.
 
 ## Out of scope
 

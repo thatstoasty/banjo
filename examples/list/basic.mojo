@@ -7,9 +7,9 @@ keeps it on the application.
 from std.utils.variant import Variant
 
 from banjo.app import Program, Runtime
-from banjo.components.defaultitem import DefaultItemStyles, default_item
+from banjo.components.default_item import DefaultItemStyles, default_item
 from banjo.components.filter import rank
-from banjo.components.textinput import TextInput
+from banjo.components.text_input import TextInput
 from banjo.components.help import HelpView
 from banjo.components.key import Binding, Help, press
 from banjo.components.list import ListItem, ListState, ListView

@@ -78,6 +78,22 @@ struct Binding(Copyable):
         self.help = help^
         self.disabled = disabled
 
+    def __init__(out self, var help: Help = Help(), var *keys: KeyEvent, disabled: Bool = False):
+        """Creates a binding.
+
+        Args:
+            help: How to describe it in a help view.
+            keys: The keystrokes that trigger it.
+            disabled: Whether it starts switched off.
+        """
+        self.help = help^
+        self.disabled = disabled
+
+        self.keys = List[KeyEvent](capacity=len(keys))
+        def _transfer_elements(idx: Int, var key: KeyEvent) {mut self}:
+            self.keys.append(key^)
+        keys^.consume_elements(_transfer_elements)
+
     def set_keys(mut self, var keys: List[KeyEvent]):
         """Replaces the keystrokes that trigger this binding.
 

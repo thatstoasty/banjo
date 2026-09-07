@@ -24,7 +24,7 @@ import mog
 
 
 @fieldwise_init
-struct Frames(Copyable):
+struct Frames(ImplicitlyCopyable, Sized, Writable):
     """A set of spinner frames and the rate they are meant to run at."""
 
     var frames: List[String]
@@ -32,149 +32,78 @@ struct Frames(Copyable):
     var hz: Float64
     """How many frames per second this set is designed for."""
 
+    comptime LINE = Self(["|", "/", "-", "\\"], 10.0)
+    """A rotating bar."""
+    comptime MINI_DOT = Self(["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"], 12.0)
+    """A single braille dot orbiting."""
+    comptime DOT = Self(["⣾", "⣽", "⣻", "⢿", "⡿", "⣟", "⣯", "⣷"], 10.0)
+    """A braille block cycling."""
+    comptime JUMP = Self(["⢄", "⢂", "⢁", "⡁", "⡈", "⡐", "⡠"], 10.0)
+    """A dot bouncing along a line."""
+    comptime PULSE = Self(["█", "▓", "▒", "░"], 8.0)
+    """A block fading in and out."""
+    comptime POINTS = Self(["∙∙∙", "●∙∙", "∙●∙", "∙∙●"], 7.0)
+    """A dot travelling across three positions."""
+    comptime METER = Self(["▱▱▱", "▰▱▱", "▰▰▱", "▰▰▰", "▰▰▱", "▰▱▱"], 7.0)
+    """A three-segment meter filling and emptying."""
+    comptime MOON = Self(["🌑", "🌒", "🌓", "🌔", "🌕", "🌖", "🌗", "🌘"], 8.0)
+    """The phases of the moon."""
 
-def line() -> Frames:
-    """A rotating bar.
+    def __init__(out self, *, copy: Self):
+        """Creates a copy of another frame set.
 
-    Returns:
-        The frame set.
-    """
-    return Frames(["|", "/", "-", "\\"], 10.0)
+        Args:
+            copy: The frame set to copy.
+        """
+        self.frames = copy.frames.copy()
+        self.hz = copy.hz
 
+    def __len__(self) -> Int:
+        """Returns how many frames are in this set.
 
-def mini_dot() -> Frames:
-    """A single braille dot orbiting.
-
-    Returns:
-        The frame set.
-    """
-    return Frames(
-        [
-            "⠋",
-            "⠙",
-            "⠹",
-            "⠸",
-            "⠼",
-            "⠴",
-            "⠦",
-            "⠧",
-            "⠇",
-            "⠏",
-        ],
-        12.0,
-    )
-
-
-def dot() -> Frames:
-    """A braille block cycling.
-
-    Returns:
-        The frame set.
-    """
-    return Frames(
-        [
-            "⣾",
-            "⣽",
-            "⣻",
-            "⢿",
-            "⡿",
-            "⣟",
-            "⣯",
-            "⣷",
-        ],
-        10.0,
-    )
+        Returns:
+            The frame count.
+        """
+        return len(self.frames)
 
 
-def jump() -> Frames:
-    """A dot bouncing along a line.
-
-    Returns:
-        The frame set.
-    """
-    return Frames(
-        ["⢄", "⢂", "⢁", "⡁", "⡈", "⡐", "⡠"],
-        10.0,
-    )
-
-
-def pulse() -> Frames:
-    """A block fading in and out.
-
-    Returns:
-        The frame set.
-    """
-    return Frames(["█", "▓", "▒", "░"], 8.0)
-
-
-def points() -> Frames:
-    """A dot travelling across three positions.
-
-    Returns:
-        The frame set.
-    """
-    return Frames(["∙∙∙", "●∙∙", "∙●∙", "∙∙●"], 7.0)
-
-
-def meter() -> Frames:
-    """A three-segment meter filling and emptying.
-
-    Returns:
-        The frame set.
-    """
-    return Frames(
-        [
-            "▱▱▱",
-            "▰▱▱",
-            "▰▰▱",
-            "▰▰▰",
-            "▰▰▱",
-            "▰▱▱",
-        ],
-        7.0,
-    )
-
-
-def moon() -> Frames:
-    """The phases of the moon.
-
-    Returns:
-        The frame set.
-    """
-    return Frames(
-        [
-            "🌑",
-            "🌒",
-            "🌓",
-            "🌔",
-            "🌕",
-            "🌖",
-            "🌗",
-            "🌘",
-        ],
-        8.0,
-    )
-
-
-struct Spinner(Copyable):
+struct Spinner(ImplicitlyCopyable):
     """A spinner and the frame it is currently showing."""
 
     var frames: Frames
     """The frame set being animated."""
-    var frame: Int
+    var frame: UInt
     """Which frame is showing."""
     var style: Optional[mog.Style]
     """How the frame is drawn."""
 
-    def __init__(out self, var frames: Frames = line()):
+    comptime LINE = Self(Frames.LINE)
+    """A rotating bar."""
+    comptime MINI_DOT = Self(Frames.MINI_DOT)
+    """A single braille dot orbiting."""
+    comptime DOT = Self(Frames.DOT)
+    """A braille block cycling."""
+    comptime JUMP = Self(Frames.JUMP)
+    """A dot bouncing along a line."""
+    comptime PULSE = Self(Frames.PULSE)
+    """A block fading in and out."""
+    comptime POINTS = Self(Frames.POINTS)
+    """A dot travelling across three positions."""
+    comptime METER = Self(Frames.METER)
+    """A three-segment meter filling and emptying."""
+    comptime MOON = Self(Frames.MOON)
+    """The phases of the moon."""
+
+    def __init__(out self, var frames: Frames = Frames.LINE, style: Optional[mog.Style] = None):
         """Creates a spinner on its first frame.
 
         Args:
             frames: The frame set to animate.
+            style: Text styler.
         """
         self.frames = frames^
         self.frame = 0
-        self.style = None
+        self.style = style
 
     def hz(self) -> Float64:
         """Returns the rate this spinner's frames are designed for.
@@ -188,9 +117,9 @@ struct Spinner(Copyable):
 
     def advance(mut self):
         """Moves to the next frame, wrapping at the end."""
-        if len(self.frames.frames) == 0:
+        if len(self.frames) == 0:
             return
-        self.frame = (self.frame + 1) % len(self.frames.frames)
+        self.frame = (self.frame + 1) % UInt(len(self.frames))
 
     def reset(mut self):
         """Returns to the first frame."""
@@ -205,12 +134,12 @@ struct Spinner(Copyable):
         Raises:
             Error: If styling fails.
         """
-        if len(self.frames.frames) == 0:
+        if len(self.frames) == 0:
             return String()
 
         # Defensive: the frame set can be swapped for a shorter one between
         # ticks, which would otherwise leave the index out of range.
-        var index = self.frame % len(self.frames.frames)
+        var index = self.frame % UInt(len(self.frames))
         if self.style:
             return self.style.value().render(self.frames.frames[index])
         return self.frames.frames[index].copy()

@@ -19,9 +19,7 @@ return bar.view(0.42)
 
 import mog
 from mist.transform.ansi import string_width
-
-comptime SMALL_BUFFER_SIZE = 129
-
+from banjo.constants import SMALL_BUFFER_SIZE
 
 def _write_percentage_text(percent: Float64, mut text: String):
     """Formats the percentage as it appears after the bar.

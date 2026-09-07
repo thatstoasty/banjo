@@ -1,6 +1,6 @@
 """A single-line text input, sized for things like a filter box.
 
-Deliberately not a port of `bubbles/textinput`, which is roughly 2,000 lines
+Deliberately not a port of `bubbles/text_input`, which is roughly 2,000 lines
 once its `cursor` and `internal` dependencies are counted. A list's filter box
 needs typing, deletion and cursor movement, and that is what this is.
 

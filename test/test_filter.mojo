@@ -4,13 +4,7 @@ from banjo.components.filter import find, rank
 
 
 def _names() raises -> List[String]:
-    return [
-        String("Apple"),
-        String("Blackberry"),
-        String("Blueberry"),
-        String("Cranberry"),
-        String("Date"),
-    ]
+    return ["Apple", "Blackberry", "Blueberry", "Cranberry", "Date"]
 
 
 def test_subsequence_matches() raises:

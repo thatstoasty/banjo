@@ -8,7 +8,7 @@ from the spinner rather than from a number picked here.
 from std.utils.variant import Variant
 
 from banjo.app import Program, Runtime
-from banjo.components.spinner import Spinner, dot, jump, line, meter, mini_dot, moon, points, pulse
+from banjo.components.spinner import Spinner, Frames
 from termctl.event.event import Char, Event, KeyEvent
 from termctl.multiplex.kqueue import KQueueSelector
 import mog
@@ -54,24 +54,24 @@ struct Model(Program):
 
     def __init__(out self) raises:
         self.spinners = [
-            Spinner(line()),
-            Spinner(mini_dot()),
-            Spinner(dot()),
-            Spinner(jump()),
-            Spinner(pulse()),
-            Spinner(points()),
-            Spinner(meter()),
-            Spinner(moon()),
+            Spinner.LINE,
+            Spinner.MINI_DOT,
+            Spinner.DOT,
+            Spinner.JUMP,
+            Spinner.PULSE,
+            Spinner.POINTS,
+            Spinner.METER,
+            Spinner.MOON,
         ]
         self.labels = [
-            String("line"),
-            String("mini_dot"),
-            String("dot"),
-            String("jump"),
-            String("pulse"),
-            String("points"),
-            String("meter"),
-            String("moon"),
+            "line",
+            "mini_dot",
+            "dot",
+            "jump",
+            "pulse",
+            "points",
+            "meter",
+            "moon",
         ]
 
         var accent = mog.Style(Profile.ANSI).foreground(mog.Color(5))
@@ -107,16 +107,16 @@ struct Model(Program):
         return None
 
     def view(self) raises -> String:
-        var out = String("Spinners (q to quit)\n\n")
+        var out = "Spinners (q to quit)\n\n"
         for i in range(len(self.spinners)):
             out.write_string("  ")
             out.write_string(self.spinners[i].view())
             out.write_string("  ")
             out.write_string(self.labels[i])
             out.write_string("  (")
-            out.write_string(String(Int(self.spinners[i].hz())))
+            out.write(Int(self.spinners[i].hz()))
             out.write_string(" Hz)\n")
-        return out
+        return out^
 
     def is_done(self) -> Bool:
         return self.done
