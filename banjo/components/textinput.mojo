@@ -53,22 +53,93 @@ struct KeyMap(Copyable):
         self.clear = Binding([press(Char("u"), KeyModifiers.CONTROL)], Help("ctrl+u", "clear"))
 
 
-def _codepoints(text: StringSpan) -> List[String]:
-    """Splits text into its codepoints.
+def _grapheme_count(text: StringSpan) -> Int:
+    """Counts the grapheme clusters in text.
 
-    Cursor positions are counted in codepoints, not bytes, so that arrow keys
-    step over a multi-byte character once rather than several times.
+    Cursor positions are counted in graphemes, not bytes or codepoints, so
+    that arrow keys step over a character the way it is drawn: `e` followed by
+    a combining acute is one column on screen and so one step for the cursor.
 
     Args:
-        text: The text to split.
+        text: The text to measure.
 
     Returns:
-        One string per codepoint.
+        The number of grapheme clusters.
     """
-    var out = List[String]()
-    for codepoint in text.codepoint_slices():
-        out.append(String(codepoint))
-    return out^
+    var count = 0
+    for _ in text.graphemes():
+        count += 1
+    return count
+
+
+def _grapheme_offset(text: StringSpan, index: Int) -> Int:
+    """Finds where a grapheme starts, in bytes.
+
+    Args:
+        text: The text to walk.
+        index: Which grapheme to find.
+
+    Returns:
+        The byte offset the grapheme starts at, or the byte length of the text
+        if `index` is past the end.
+    """
+    if index <= 0:
+        return 0
+    var offset = 0
+    var seen = 0
+    for grapheme in text.graphemes():
+        if seen == index:
+            return offset
+        offset += grapheme.byte_length()
+        seen += 1
+    return offset
+
+
+def _grapheme_bounds(text: StringSpan, index: Int) -> Tuple[Int, Int]:
+    """Finds the byte range one grapheme occupies.
+
+    Args:
+        text: The text to walk.
+        index: Which grapheme to find.
+
+    Returns:
+        The first and last-plus-one byte of the grapheme. Both are the byte
+        length of the text when `index` is past the end, so an out-of-range
+        index describes an empty range rather than raising.
+    """
+    var offset = 0
+    var seen = 0
+    for grapheme in text.graphemes():
+        if seen == index:
+            return (offset, offset + grapheme.byte_length())
+        offset += grapheme.byte_length()
+        seen += 1
+    return (offset, offset)
+
+
+def _grapheme_index(text: StringSpan, offset: Int) -> Int:
+    """Finds which grapheme a byte offset falls after.
+
+    Used to place the cursor after an edit. Deriving it from the rebuilt text
+    rather than adding to the old cursor keeps the count right when an insert
+    joins the character before it -- typing a combining accent after `e`
+    lengthens that grapheme instead of adding one.
+
+    Args:
+        text: The text to walk.
+        offset: The byte offset to place.
+
+    Returns:
+        The number of graphemes that begin before `offset`.
+    """
+    var index = 0
+    var seen = 0
+    for grapheme in text.graphemes():
+        if seen >= offset:
+            break
+        seen += grapheme.byte_length()
+        index += 1
+    return index
 
 
 struct TextInput(Copyable):
@@ -77,7 +148,7 @@ struct TextInput(Copyable):
     var value: String
     """The text entered so far."""
     var cursor: Int
-    """Where the cursor sits, counted in codepoints from the start."""
+    """Where the cursor sits, counted in graphemes from the start."""
     var placeholder: String
     """Shown instead of the value while the value is empty."""
     var prompt: String
@@ -87,7 +158,7 @@ struct TextInput(Copyable):
     var width: Int
     """How wide the text may be drawn. Zero means unlimited."""
     var offset: Int
-    """First visible codepoint, when the value is wider than `width`.
+    """First visible grapheme, when the value is wider than `width`.
 
     Written by `update`, read by `view`. Keeping it means the window holds
     still while the cursor moves inside it; deriving it afresh each render
@@ -118,12 +189,12 @@ struct TextInput(Copyable):
         self.keymap = KeyMap()
 
     def length(self) -> Int:
-        """Returns the length of the value in codepoints.
+        """Returns the length of the value in graphemes.
 
         Returns:
-            The codepoint count.
+            The grapheme count.
         """
-        return self.value.count_codepoints()
+        return _grapheme_count(self.value)
 
     def set_value(mut self, var value: String):
         """Replaces the value, putting the cursor at the end.
@@ -147,39 +218,34 @@ struct TextInput(Copyable):
         Args:
             text: The text to insert.
         """
-        var parts = _codepoints(self.value)
-        var rebuilt = String()
-        for i in range(len(parts)):
-            if i == self.cursor:
-                rebuilt.write_string(text)
-            rebuilt.write_string(parts[i])
-        if self.cursor >= len(parts):
-            rebuilt.write_string(text)
+        var at = _grapheme_offset(self.value, self.cursor)
+        var rebuilt = String(capacity=self.value.byte_length() + text.byte_length())
+        rebuilt.write_string(self.value[byte=0:at])
+        rebuilt.write_string(text)
+        rebuilt.write_string(self.value[byte = at : self.value.byte_length()])
 
+        self.cursor = _grapheme_index(rebuilt, at + text.byte_length())
         self.value = rebuilt^
-        self.cursor += _codepoints(text).__len__()
 
     def delete_before(mut self):
         """Deletes the character before the cursor."""
         if self.cursor == 0:
             return
-        var parts = _codepoints(self.value)
-        var rebuilt = String()
-        for i in range(len(parts)):
-            if i != self.cursor - 1:
-                rebuilt.write_string(parts[i])
+        var bounds = _grapheme_bounds(self.value, self.cursor - 1)
+        var rebuilt = String(capacity=self.value.byte_length())
+        rebuilt.write_string(self.value[byte = 0 : bounds[0]])
+        rebuilt.write_string(self.value[byte = bounds[1] : self.value.byte_length()])
         self.value = rebuilt^
         self.cursor -= 1
 
     def delete_under(mut self):
         """Deletes the character under the cursor."""
-        var parts = _codepoints(self.value)
-        if self.cursor >= len(parts):
+        var bounds = _grapheme_bounds(self.value, self.cursor)
+        if bounds[0] == bounds[1]:
             return
-        var rebuilt = String()
-        for i in range(len(parts)):
-            if i != self.cursor:
-                rebuilt.write_string(parts[i])
+        var rebuilt = String(capacity=self.value.byte_length())
+        rebuilt.write_string(self.value[byte = 0 : bounds[0]])
+        rebuilt.write_string(self.value[byte = bounds[1] : self.value.byte_length()])
         self.value = rebuilt^
 
     def _follow_cursor(mut self):
@@ -282,43 +348,50 @@ struct TextInput(Copyable):
 
         return False
 
-    def _visible(self) -> Tuple[List[String], Int]:
-        """Works out which codepoints fit, scrolling to keep the cursor shown.
+    def _visible(self) -> Tuple[Int, Int, Int]:
+        """Works out which part of the value fits, keeping the cursor shown.
 
         Derived rather than stored, so that `view` can stay pure --
         `banjo.app.Program.view` takes an immutable `self`. The window depends
         only on the cursor and the width, so recomputing it gives the same
-        answer every time.
+        answer every time. Byte offsets are returned rather than the text
+        itself so that nothing is copied: `view` slices `self.value` in place.
 
         Returns:
-            The visible codepoints and where the cursor sits among them.
+            The first and last-plus-one visible byte, and the byte the cursor
+            sits at. The third is always between the first two.
         """
-        var parts = _codepoints(self.value)
-        if self.width <= 0 or len(parts) < self.width:
-            return (parts^, self.cursor)
+        var total = self.length()
+        var start = 0
+        var end = total
+        if self.width > 0 and total >= self.width:
+            # The stored offset is a starting point, not the truth: `width` may
+            # have changed since `update` last ran. Nudge a local copy so the
+            # cursor is always visible, without writing anything back -- the
+            # same defensive derivation `ListView.render` does on a scratch
+            # state.
+            start = self.offset
+            if self.cursor < start:
+                start = self.cursor
+            elif self.cursor >= start + self.width:
+                start = self.cursor - self.width + 1
+            if start > total - self.width:
+                start = total - self.width
+            if start < 0:
+                start = 0
+            end = start + self.width
 
-        # The stored offset is a starting point, not the truth: `width` may
-        # have changed since `update` last ran. Nudge a local copy so the
-        # cursor is always visible, without writing anything back -- the same
-        # defensive derivation `ListView.render` does on a scratch state.
-        var start = self.offset
-        if self.cursor < start:
-            start = self.cursor
-        elif self.cursor >= start + self.width:
-            start = self.cursor - self.width + 1
-        if start > len(parts) - self.width:
-            start = len(parts) - self.width
-        if start < 0:
-            start = 0
+        var cursor = self.cursor
+        if cursor < start:
+            cursor = start
+        elif cursor > end:
+            cursor = end
 
-        var end = start + self.width
-        if end > len(parts):
-            end = len(parts)
-
-        var window = List[String]()
-        for i in range(start, end):
-            window.append(parts[i].copy())
-        return (window^, self.cursor - start)
+        return (
+            _grapheme_offset(self.value, start),
+            _grapheme_offset(self.value, end),
+            _grapheme_offset(self.value, cursor),
+        )
 
     def view(self) raises -> String:
         """Draws the input.
@@ -345,16 +418,17 @@ struct TextInput(Copyable):
             return out
 
         var visible = self._visible()
-        var text = String()
-        for i in range(len(visible[0])):
-            if i == visible[1]:
-                text.write_string(self.cursor_glyph)
-            text.write_string(visible[0][i])
-        if visible[1] >= len(visible[0]):
-            text.write_string(self.cursor_glyph)
+        if not self.styles_text:
+            # Nothing to wrap the text in, so write the window straight out
+            # rather than staging it in a second string.
+            out.write_string(self.value[byte = visible[0] : visible[2]])
+            out.write_string(self.cursor_glyph)
+            out.write_string(self.value[byte = visible[2] : visible[1]])
+            return out
 
-        if self.styles_text:
-            out.write_string(self.styles_text.value().render(text))
-        else:
-            out.write_string(text)
+        var text = String(capacity=visible[1] - visible[0] + self.cursor_glyph.byte_length())
+        text.write_string(self.value[byte = visible[0] : visible[2]])
+        text.write_string(self.cursor_glyph)
+        text.write_string(self.value[byte = visible[2] : visible[1]])
+        out.write_string(self.styles_text.value().render(text))
         return out

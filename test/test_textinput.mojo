@@ -100,6 +100,43 @@ def test_multibyte_cursor_steps_once_per_character() raises:
     assert_equal(input.value, "hllo")
 
 
+def test_cursor_steps_over_a_grapheme_cluster_once() raises:
+    # "e" plus a combining acute is two codepoints but one character on
+    # screen, so the cursor must treat it as one position.
+    var input = TextInput()
+    input.set_value(String("e\u0301x"))
+    assert_equal(input.length(), 2)
+    assert_equal(input.cursor, 2)
+    _ = input.update(_key(Left()))
+    assert_equal(input.cursor, 1)
+
+
+def test_backspace_deletes_a_whole_cluster() raises:
+    var input = TextInput()
+    input.set_value(String("a👩‍👩‍👧‍👦"))
+    assert_equal(input.length(), 2)
+    assert_true(input.update(_key(Backspace())))
+    assert_equal(input.value, "a")
+    assert_equal(input.cursor, 1)
+
+
+def test_typing_a_combining_mark_joins_the_character_before_it() raises:
+    # Each codepoint arrives as its own key event, but the accent merges into
+    # the "e", so the cursor must not advance past one character.
+    var input = _typed(String("e\u0301"))
+    assert_equal(input.value, "e\u0301")
+    assert_equal(input.length(), 1)
+    assert_equal(input.cursor, 1)
+
+
+def test_delete_removes_a_whole_cluster_under_the_cursor() raises:
+    var input = TextInput()
+    input.set_value(String("🇬🇧z"))
+    _ = input.update(_key(Home()))
+    assert_true(input.update(_key(Delete())))
+    assert_equal(input.value, "z")
+
+
 def test_view_shows_prompt_and_cursor() raises:
     var input = _typed(String("ab"))
     assert_equal(input.view(), "> ab▏")

@@ -27,7 +27,6 @@ struct Renderer(Copyable):
     # ticker             *time.Ticker
     # var done               chan struct{
     var last_render: String
-    var last_rendered_lines: List[String]
     var lines_rendered: UInt16
     var alt_lines_rendered: UInt16
     # var useANSICompressor: Bool
@@ -64,7 +63,6 @@ struct Renderer(Copyable):
         self.framerate = 1.0 / framerate
         self.queued_message_lines = List[String]()
         self.last_render = ""
-        self.last_rendered_lines = List[String]()
         self.lines_rendered = 0
         self.alt_lines_rendered = 0
         self.cursor_hidden = False
@@ -168,16 +166,12 @@ struct Renderer(Copyable):
         # Paint new lines.
         var i = 0
         while i < len(newLines):
-            # Queuing messages triggers repaint -> we don't have access to previous frame content.
-            # Previously rendered line is the same.
-            # var canSkip = not flushQueuedMessages and len(self.last_rendered_lines) > i and self.last_rendered_lines[i] == newLines[i]
-            # # ref ignore = self.ignoreLines[i]
-            # # if ignore or canSkip:
-            # if canSkip:
-            #     # Unless this is the last line, move the cursor down.
-            #     if i < len(newLines)-1:
-            #         buf.write("\n")
-            #     continue
+            # Bubbletea skips lines that match the previous frame, moving the
+            # cursor down instead of rewriting them. Doing that here would mean
+            # keeping a copy of last frame's lines, and copying every line of
+            # every frame to keep it costs more than the writes it would save at
+            # this size. `last_render` already skips the whole frame when
+            # nothing moved, which is the common case.
 
             if i == 0 and self.last_render == "":
                 # On first render, reset the cursor to the start of the line
@@ -234,10 +228,6 @@ struct Renderer(Copyable):
 
         self.writer.write(buf)
         self.last_render = self.buf
-
-        # Save previously rendered lines for comparison in the next render. If we
-        # don't do this, we can't skip rendering lines that haven't changed.
-        self.last_rendered_lines = [String(line) for line in newLines]
 
         # Rebind rather than clear in place. `newLines` are slices borrowing
         # this buffer and are still live here, so mutating it (`resize(0)`)
