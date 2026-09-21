@@ -155,7 +155,16 @@ def dispatch[P: Program](mut program: P, msg: P.Msg) raises:
     Raises:
         Error: Propagated from `update`.
     """
-    var pending = Optional[P.Msg](msg)
+    # The first message is borrowed straight into `update` rather than copied
+    # into an `Optional` to start the loop. Under Mojo 1.1, implicitly copying
+    # a `P.Msg` inside generic code can produce a wrong value -- an empty
+    # `Optional`, or a crash -- depending on the layout of the message and the
+    # model. The elm examples hit it with a `Variant` holding termctl's
+    # `KeyEvent` among other cases: `update` never ran, so every key was
+    # dropped. The same copy made in non-generic code is correct. Borrowing
+    # the first message and moving each follow-up means no `P.Msg` is ever
+    # copied here. `test_app.mojo` holds a shape that breaks the old version.
+    var pending = program.update(msg)
     while pending:
         pending = program.update(pending.value())
 
