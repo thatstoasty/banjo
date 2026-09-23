@@ -5,13 +5,14 @@
 from `on_tick` -- which is all the animation ever was.
 """
 
+from std.sys.info import CompilationTarget
 from std.utils.variant import Variant
 
 from banjo.app import Program, Runtime
 from banjo.components.progress import ProgressBar
-from banjo.components.spinner import Spinner, mini_dot
+from banjo.components.spinner import Spinner
 from termctl.event.event import Char, Event, KeyEvent
-from termctl.multiplex.kqueue import KQueueSelector
+from termctl.multiplex import Selector
 import mog
 from mog import Profile
 
@@ -75,10 +76,10 @@ struct Model(Program):
 
         self.plain = ProgressBar(width=48)
         self.plain.show_percentage = False
-        self.plain.full_char = String("=")
-        self.plain.empty_char = String("-")
+        self.plain.full_char = "="
+        self.plain.empty_char = "-"
 
-        self.spinner = Spinner(mini_dot())
+        self.spinner = Spinner.MINI_DOT
         self.percent = 0.0
         self.running = True
         self.done = False
@@ -125,9 +126,9 @@ struct Model(Program):
         return None
 
     def view(self) raises -> String:
-        var status = String("done")
+        var status = "done"
         if self.percent < 1.0:
-            status = String(self.spinner.view(), " downloading") if self.running else String("  paused")
+            status = String(self.spinner.view(), " downloading") if self.running else "  paused"
 
         return String(
             "Progress (space to pause, r to restart, q to quit)\n\n  ",
@@ -142,9 +143,18 @@ struct Model(Program):
         return self.done
 
 
-def main() raises:
-    var model = Model()
-    var rt = Runtime[Model, KQueueSelector](KQueueSelector(), RENDER_HZ)
+def run_model[T: Selector](var selector: T, mut model: Model) raises:
+    var rt = Runtime[Model](selector^, RENDER_HZ)
     rt.every(STEP_HZ, STEP_TIMER)
     rt.every(model.spinner.hz(), SPIN_TIMER)
     rt.run(model)
+
+
+def main() raises:
+    var model = Model()
+    comptime if CompilationTarget.is_macos():
+        from termctl.multiplex import KQueueSelector
+        run_model(KQueueSelector(), model)
+    else:
+        from termctl.multiplex import SelectSelector
+        run_model(SelectSelector(), model)

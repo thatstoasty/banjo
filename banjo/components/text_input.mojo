@@ -219,7 +219,7 @@ struct TextInput(Copyable):
             text: The text to insert.
         """
         var at = _grapheme_offset(self.value, self.cursor)
-        var rebuilt = String(capacity=self.value.byte_length() + text.byte_length())
+        var rebuilt = String(capacity_bytes=self.value.byte_length() + text.byte_length())
         rebuilt.write_string(self.value[byte=0:at])
         rebuilt.write_string(text)
         rebuilt.write_string(self.value[byte = at : self.value.byte_length()])
@@ -232,7 +232,7 @@ struct TextInput(Copyable):
         if self.cursor == 0:
             return
         var bounds = _grapheme_bounds(self.value, self.cursor - 1)
-        var rebuilt = String(capacity=self.value.byte_length())
+        var rebuilt = String(capacity_bytes=self.value.byte_length())
         rebuilt.write_string(self.value[byte = 0 : bounds[0]])
         rebuilt.write_string(self.value[byte = bounds[1] : self.value.byte_length()])
         self.value = rebuilt^
@@ -243,7 +243,7 @@ struct TextInput(Copyable):
         var bounds = _grapheme_bounds(self.value, self.cursor)
         if bounds[0] == bounds[1]:
             return
-        var rebuilt = String(capacity=self.value.byte_length())
+        var rebuilt = String(capacity_bytes=self.value.byte_length())
         rebuilt.write_string(self.value[byte = 0 : bounds[0]])
         rebuilt.write_string(self.value[byte = bounds[1] : self.value.byte_length()])
         self.value = rebuilt^
@@ -426,7 +426,7 @@ struct TextInput(Copyable):
             out.write_string(self.value[byte = visible[2] : visible[1]])
             return out
 
-        var text = String(capacity=visible[1] - visible[0] + self.cursor_glyph.byte_length())
+        var text = String(capacity_bytes=visible[1] - visible[0] + self.cursor_glyph.byte_length())
         text.write_string(self.value[byte = visible[0] : visible[2]])
         text.write_string(self.cursor_glyph)
         text.write_string(self.value[byte = visible[2] : visible[1]])

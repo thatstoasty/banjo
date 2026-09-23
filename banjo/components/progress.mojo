@@ -104,7 +104,7 @@ struct ProgressBar(Copyable):
         if ratio > 1.0:
             ratio = 1.0
 
-        var text = String(capacity=SMALL_BUFFER_SIZE)
+        var text = String(capacity_bytes=SMALL_BUFFER_SIZE)
         if self.show_percentage:
             _write_percentage_text(ratio, text)
 
@@ -118,15 +118,15 @@ struct ProgressBar(Copyable):
         if filled < 0:
             filled = 0
 
-        var full = String(capacity=SMALL_BUFFER_SIZE)
+        var full = String(capacity_bytes=SMALL_BUFFER_SIZE)
         for _ in range(filled):
             full.write_string(self.full_char)
 
-        var empty = String(capacity=SMALL_BUFFER_SIZE)
+        var empty = String(capacity_bytes=SMALL_BUFFER_SIZE)
         for _ in range(bar_width - filled):
             empty.write_string(self.empty_char)
 
-        var out = String(capacity=SMALL_BUFFER_SIZE)
+        var out = String(capacity_bytes=SMALL_BUFFER_SIZE)
         if self.full_style and full.byte_length() > 0:
             out.write_string(self.full_style.value().render(full))
         else:

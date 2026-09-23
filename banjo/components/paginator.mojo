@@ -8,8 +8,7 @@ A port of `bubbles/paginator`. Two departures from the Go original:
 - `update` returns nothing rather than a command, since it never produced one.
 
 ```mojo
-var pages = Paginator(per_page=10)
-_ = pages.set_total_pages(len(items))
+var pages = Paginator(items=UInt16(len(items)), per_page=10)
 var bounds = pages.slice_bounds(len(items))
 for i in range(bounds[0], bounds[1]):
     ...
@@ -57,18 +56,17 @@ struct KeyMap(Copyable):
 
 
 def _calculate_total_pages(items: UInt16, per_page: UInt16) -> UInt16:
-    """Sets the page count from a number of items, rounding up.
+    """Works out the page count for a number of items, rounding up.
 
-    A count below one leaves the paginator untouched, matching the Go
-    original, so that an empty collection does not collapse it to zero
-    pages mid-render.
+    No items still gives one page, so that an empty collection does not
+    collapse the paginator to zero pages mid-render.
 
     Args:
         items: How many items there are in total.
         per_page: How many items fit on a page.
 
     Returns:
-        The resulting page count.
+        The page count.
     """
     if items < 1:
         return 1
@@ -237,7 +235,7 @@ struct Paginator(Copyable):
             The rendered pagination.
         """
         if self.layout == Layout.DOTS:
-            var out = String(capacity=SMALL_BUFFER_SIZE)
+            var out = String(capacity_bytes=SMALL_BUFFER_SIZE)
             for i in range(self.total_pages):
                 if i == self.page:
                     out.write_string(self.active_dot)

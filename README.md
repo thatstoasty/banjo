@@ -2,7 +2,7 @@
 
 TUI building blocks in Mojo.
 
-![Mojo Version](https://img.shields.io/badge/Mojo%F0%9F%94%A5-26.1-orange)
+![Mojo Version](https://img.shields.io/badge/Mojo%F0%9F%94%A5-1.1.0-orange)
 ![Build Status](https://github.com/thatstoasty/banjo/actions/workflows/build.yml/badge.svg)
 ![Test Status](https://github.com/thatstoasty/banjo/actions/workflows/test.yml/badge.svg)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -30,7 +30,7 @@ There's two ways to build `banjo` from source: directly from the Git repository 
 Run the following commands in your terminal:
 
 ```bash
-pixi add -g "https://github.com/thatstoasty/banjo.git" && pixi install
+pixi add banjo --git "https://github.com/thatstoasty/banjo.git" --tag "v0.1.0" && pixi install
 ```
 
 #### Building from source: Local

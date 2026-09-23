@@ -59,7 +59,7 @@ struct Renderer(Copyable):
             framerate = MAX_FPS
 
         self.writer = writer
-        self.buf = String(capacity=1024)
+        self.buf = String(capacity_bytes=1024)
         self.framerate = 1.0 / framerate
         self.queued_message_lines = List[String]()
         self.last_render = ""
@@ -238,7 +238,7 @@ struct Renderer(Copyable):
         # instead of replacing it pins a fresh allocation every flush -- a leak
         # of ~150KB per frame that only shows up once something renders on a
         # timer rather than per keystroke.
-        self.buf = String(capacity=1024)
+        self.buf = String(capacity_bytes=1024)
 
     def write(mut self, str: StringSpan) -> None:
         """Writes the given input to the terminal and flushes it.
@@ -251,7 +251,7 @@ struct Renderer(Copyable):
         Args:
             str: The input to write to the terminal.
         """
-        self.buf = String(capacity=1024)
+        self.buf = String(capacity_bytes=1024)
         # An empty frame is still a frame. Returning early here would leave the
         # previous one on screen with nothing to replace it.
         if str.byte_length() == 0:

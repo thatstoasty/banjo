@@ -489,7 +489,7 @@ struct ListView(Copyable):
         # of reversing a list afterwards, which is the same order without the
         # rows having to exist separately to be reordered.
         var bottom_up = self.direction == Direction.BOTTOM_TO_TOP
-        var out = String(capacity=SMALL_BUFFER_SIZE)
+        var out = String(capacity_bytes=SMALL_BUFFER_SIZE)
         for step in range(bounds[1] - bounds[0]):
             var index = bounds[1] - 1 - step if bottom_up else bounds[0] + step
             ref item = self.items[index]

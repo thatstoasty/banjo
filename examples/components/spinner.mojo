@@ -5,12 +5,13 @@ Each frame set carries the rate it was designed for, so the timer is registered
 from the spinner rather than from a number picked here.
 """
 
+from std.sys.info import CompilationTarget
 from std.utils.variant import Variant
 
 from banjo.app import Program, Runtime
 from banjo.components.spinner import Spinner, Frames
 from termctl.event.event import Char, Event, KeyEvent
-from termctl.multiplex.kqueue import KQueueSelector
+from termctl.multiplex import Selector
 import mog
 from mog import Profile
 
@@ -122,8 +123,17 @@ struct Model(Program):
         return self.done
 
 
-def main() raises:
-    var model = Model()
-    var rt = Runtime[Model, KQueueSelector](KQueueSelector(), RENDER_HZ)
+def run_model[T: Selector](var selector: T, mut model: Model) raises:
+    var rt = Runtime[Model](selector^, RENDER_HZ)
     rt.every(SPIN_HZ, SPIN_TIMER)
     rt.run(model)
+
+
+def main() raises:
+    var model = Model()
+    comptime if CompilationTarget.is_macos():
+        from termctl.multiplex import KQueueSelector
+        run_model(KQueueSelector(), model)
+    else:
+        from termctl.multiplex import SelectSelector
+        run_model(SelectSelector(), model)

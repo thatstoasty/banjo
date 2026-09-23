@@ -1,4 +1,5 @@
-from std.runtime.asyncrt import TaskGroup
+from std.runtime._asyncrt import TaskGroup
+
 from std.testing import TestSuite, assert_equal, assert_false, assert_true
 
 from banjo.task import Mailbox

@@ -5,14 +5,15 @@ are, and which slice of a collection that corresponds to. Drawing the items is
 the application's job, which is why `slice_bounds` exists.
 """
 
+from std.sys.info import CompilationTarget
 from std.utils.variant import Variant
 
 from banjo.app import Program, Runtime
 from banjo.components.help import HelpView
-from banjo.components.key import Binding, Help, press
+from banjo.components.key import Binding, Help
 from banjo.components.paginator import Layout, Paginator
 from termctl.event.event import Char, Event, KeyEvent
-from termctl.multiplex.kqueue import KQueueSelector
+from termctl.multiplex import Selector
 import mog
 from mog import Profile
 
@@ -125,7 +126,7 @@ struct Model(Program):
             "   showing ",
             self.pages.items_on_page(UInt16(len(all))),
             " of ",
-            UInt16(len(all)),
+            len(all),
             "\n",
             self.help.short_view(self.bindings),
         )
@@ -134,7 +135,16 @@ struct Model(Program):
         return self.done
 
 
+def run_model[T: Selector](var selector: T, mut model: Model) raises:
+    var rt = Runtime[Model](selector^, RENDER_HZ)
+    rt.run(model)
+
+
 def main() raises:
     var model = Model()
-    var rt = Runtime[Model, KQueueSelector](KQueueSelector(), RENDER_HZ)
-    rt.run(model)
+    comptime if CompilationTarget.is_macos():
+        from termctl.multiplex import KQueueSelector
+        run_model(KQueueSelector(), model)
+    else:
+        from termctl.multiplex import SelectSelector
+        run_model(SelectSelector(), model)

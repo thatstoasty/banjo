@@ -8,7 +8,7 @@ The payoff is visible while the game runs: the spinner keeps turning and the
 snake keeps moving at full rate for the whole time the task sits blocked.
 """
 
-from std.runtime.asyncrt import TaskGroup
+from std.runtime._asyncrt import TaskGroup
 from std.time import sleep
 from banjo.app import Runtime
 from banjo.task import Mailbox

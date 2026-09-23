@@ -396,7 +396,7 @@ struct Model(Program):
         return "·"
 
     def board_view(self) -> String:
-        var out = String(capacity=self.width * self.height * 2)
+        var out = String(capacity_bytes=self.width * self.height * 2)
         var y = 0
         while y < self.height:
             var x = 0

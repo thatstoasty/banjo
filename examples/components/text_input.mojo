@@ -7,14 +7,15 @@ only shifts when the cursor would leave.
 Escape quits, since `q` has to be typeable.
 """
 
+from std.sys.info import CompilationTarget
 from std.utils.variant import Variant
 
 from banjo.app import Program, Runtime
 from banjo.components.help import HelpView
-from banjo.components.key import Binding, Help, matches, press
+from banjo.components.key import Binding, Help, matches
 from banjo.components.text_input import TextInput
 from termctl.event.event import Char, Esc, Event, KeyEvent, Tab
-from termctl.multiplex.kqueue import KQueueSelector
+from termctl.multiplex import Selector
 import mog
 from mog import Profile
 
@@ -56,14 +57,14 @@ struct Model(Program):
         var dim = mog.Style(Profile.ANSI).foreground(mog.Color(8))
 
         self.name = TextInput()
-        self.name.prompt = String("  name   > ")
-        self.name.placeholder = String("type something")
+        self.name.prompt = "  name   > "
+        self.name.placeholder = "type something"
         self.name.styles_prompt = accent.copy()
         self.name.styles_placeholder = dim.copy()
 
         self.narrow = TextInput()
-        self.narrow.prompt = String("  narrow > ")
-        self.narrow.placeholder = String("12 columns")
+        self.narrow.prompt = "  narrow > "
+        self.narrow.placeholder = "12 columns"
         self.narrow.width = 12
         self.narrow.styles_prompt = accent.copy()
         self.narrow.styles_placeholder = dim.copy()
@@ -71,11 +72,11 @@ struct Model(Program):
         self.focus_narrow = False
         self.help = HelpView(width=76)
         self.bindings = [
-            Binding([press(Tab())], Help("tab", "switch field")),
+            Binding(keys=[Tab()], help=Help("tab", "switch field")),
             self.name.keymap.left.copy(),
             self.name.keymap.right.copy(),
             self.name.keymap.clear.copy(),
-            Binding([press(Esc())], Help("esc", "quit")),
+            Binding(keys=[Esc()], help=Help("esc", "quit")),
         ]
         self.done = False
 
@@ -140,7 +141,16 @@ struct Model(Program):
         return self.done
 
 
+def run_model[T: Selector](var selector: T, mut model: Model) raises:
+    var rt = Runtime[Model](selector^, RENDER_HZ)
+    rt.run(model)
+
+
 def main() raises:
     var model = Model()
-    var rt = Runtime[Model, KQueueSelector](KQueueSelector(), RENDER_HZ)
-    rt.run(model)
+    comptime if CompilationTarget.is_macos():
+        from termctl.multiplex import KQueueSelector
+        run_model(KQueueSelector(), model)
+    else:
+        from termctl.multiplex import SelectSelector
+        run_model(SelectSelector(), model)
