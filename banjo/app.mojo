@@ -24,7 +24,7 @@ frame-diffing state, which is the failure mode this shape is meant to prevent.
 from std.sys import stdout
 from std.time import perf_counter_ns
 
-from termctl.event.event import Event
+from termctl.event.event import Event, Resize
 from termctl.event.read import EventReader
 from termctl.multiplex.selector import Selector
 from termctl.terminal.tty import TTY, Mode
@@ -257,6 +257,15 @@ struct Runtime[P: Program, T: Selector]:
 
                 var event = poll_event(self.reader, deadline)
                 if event:
+                    # A resize changes how the frame has to be drawn -- what
+                    # fits, what gets truncated -- whether or not the app does
+                    # anything with the event, so it always calls for a paint.
+                    # Otherwise an app that only handles keys keeps its old
+                    # frame, laid out for the old width, until the next key.
+                    # The renderer re-measures the terminal when it flushes and
+                    # repaints even an unchanged frame at the new size.
+                    if event.value().isa[Resize]():
+                        dirty = True
                     var msg = Self.P.on_event(event.value())
                     if msg:
                         dispatch(program, msg.value())
