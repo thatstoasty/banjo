@@ -15,6 +15,7 @@ progress = "mojo -D ASSERT=all progress.mojo"
 table = "mojo -D ASSERT=all table.mojo"
 paginator = "mojo -D ASSERT=all paginator.mojo"
 text_input = "mojo -D ASSERT=all text_input.mojo"
+list = "mojo -D ASSERT=all list.mojo"
 
 [dependencies]
 banjo = { path = "../.." }

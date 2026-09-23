@@ -14,7 +14,7 @@ from banjo.components.help import HelpView
 from banjo.components.key import Binding, Help, press
 from banjo.components.list import ListItem, ListState, ListView
 from termctl.event.event import Char, Enter, Esc, Event, KeyEvent
-from termctl.multiplex.kqueue import KQueueSelector
+from termctl.multiplex import DefaultSelector
 import mog
 from mog import Profile
 
@@ -233,5 +233,5 @@ struct Model(Program):
 
 def main() raises:
     var model = Model()
-    var rt = Runtime[Model, KQueueSelector](KQueueSelector(), RENDER_HZ)
+    var rt = Runtime[Model, DefaultSelector](DefaultSelector(), RENDER_HZ)
     rt.run(model)
