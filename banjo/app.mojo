@@ -12,7 +12,7 @@ a game tick or a spinner costs no extra thread and no extra poll.
 
 ```mojo
 var model = Model()
-var rt = Runtime[Model, KQueueSelector](KQueueSelector(), fps=24.0)
+var rt = Runtime[Model](DefaultSelector(), fps=24.0)
 rt.every(10.0, Msg(Step()))
 rt.run(model)
 ```

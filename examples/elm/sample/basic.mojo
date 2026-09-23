@@ -1,5 +1,5 @@
 from banjo.app import Runtime
-from termctl.multiplex.kqueue import KQueueSelector
+from termctl.multiplex import DefaultSelector
 from sample.app import Model
 
 
@@ -10,5 +10,5 @@ often the view is rebuilt after input rather than driving frames."""
 
 def main() raises:
     var model = Model()
-    var rt = Runtime[Model](KQueueSelector(), RENDER_HZ)
+    var rt = Runtime[Model](DefaultSelector(), RENDER_HZ)
     rt.run(model)

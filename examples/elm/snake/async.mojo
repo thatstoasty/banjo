@@ -12,7 +12,7 @@ from std.runtime._asyncrt import TaskGroup
 from std.time import sleep
 from banjo.app import Runtime
 from banjo.task import Mailbox
-from termctl.multiplex.kqueue import KQueueSelector
+from termctl.multiplex import DefaultSelector
 from snake.app import Model, SPIN_TIMER, STEP_TIMER
 
 
@@ -50,7 +50,7 @@ async def load_best_score[o: MutOrigin](box: Pointer[Mailbox[Int], o]) -> None:
 
 def main() raises:
     var model = Model()
-    var rt = Runtime[Model, KQueueSelector](KQueueSelector(), RENDER_HZ)
+    var rt = Runtime[Model, DefaultSelector](DefaultSelector(), RENDER_HZ)
     rt.every(STEP_HZ, STEP_TIMER)
     rt.every(SPIN_HZ, SPIN_TIMER)
 

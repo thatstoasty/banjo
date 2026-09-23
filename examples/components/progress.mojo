@@ -5,14 +5,13 @@
 from `on_tick` -- which is all the animation ever was.
 """
 
-from std.sys.info import CompilationTarget
 from std.utils.variant import Variant
 
 from banjo.app import Program, Runtime
 from banjo.components.progress import ProgressBar
 from banjo.components.spinner import Spinner
 from termctl.event.event import Char, Event, KeyEvent
-from termctl.multiplex import Selector
+from termctl.multiplex import DefaultSelector
 import mog
 from mog import Profile
 
@@ -143,18 +142,9 @@ struct Model(Program):
         return self.done
 
 
-def run_model[T: Selector](var selector: T, mut model: Model) raises:
-    var rt = Runtime[Model](selector^, RENDER_HZ)
+def main() raises:
+    var model = Model()
+    var rt = Runtime[Model](DefaultSelector(), RENDER_HZ)
     rt.every(STEP_HZ, STEP_TIMER)
     rt.every(model.spinner.hz(), SPIN_TIMER)
     rt.run(model)
-
-
-def main() raises:
-    var model = Model()
-    comptime if CompilationTarget.is_macos():
-        from termctl.multiplex import KQueueSelector
-        run_model(KQueueSelector(), model)
-    else:
-        from termctl.multiplex import SelectSelector
-        run_model(SelectSelector(), model)

@@ -12,7 +12,7 @@ from std.runtime._asyncrt import TaskGroup
 from std.time import sleep
 from banjo.app import Runtime
 from banjo.task import Mailbox
-from termctl.multiplex.kqueue import KQueueSelector
+from termctl.multiplex import DefaultSelector
 from sample.app import Model, SPIN_TIMER
 
 
@@ -48,7 +48,7 @@ async def load_session[o: MutOrigin](box: Pointer[Mailbox[Int], o]) -> None:
 
 def main() raises:
     var model = Model()
-    var rt = Runtime[Model, KQueueSelector](KQueueSelector(), RENDER_HZ)
+    var rt = Runtime[Model, DefaultSelector](DefaultSelector(), RENDER_HZ)
     rt.every(SPIN_HZ, SPIN_TIMER)
 
     var tg = TaskGroup()

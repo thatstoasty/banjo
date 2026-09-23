@@ -1,5 +1,5 @@
 from banjo.app import Runtime
-from termctl.multiplex.kqueue import KQueueSelector
+from termctl.multiplex import DefaultSelector
 from snake.app import Model, STEP_TIMER
 
 
@@ -11,7 +11,7 @@ comptime STEP_HZ = 10.0
 
 def main() raises:
     var model = Model()
-    var rt = Runtime[Model, KQueueSelector](KQueueSelector(), RENDER_HZ)
+    var rt = Runtime[Model, DefaultSelector](DefaultSelector(), RENDER_HZ)
 
     # The snake's speed is its own timer, not a consequence of how fast keys
     # arrive. `on_tick` stays silent unless the game is actually running.

@@ -29,12 +29,12 @@ backend = { name = "pixi-build-mojo", version = "0.*" }
 [dependencies]
 mojo = ">=1.1.0,<1.2.0"
 mog = { git = "https://github.com/thatstoasty/mog.git", tag = "v0.3.3" }
-termctl = { git = "https://github.com/thatstoasty/termctl.git", tag = "v0.2.0" }
+termctl = { git = "https://github.com/thatstoasty/termctl.git", tag = "v0.2.1" }
 
 [package.build-dependencies]
 mojo-compiler = ">=1.1.0,<1.2.0"
 mog = { git = "https://github.com/thatstoasty/mog.git", tag = "v0.3.3" }
-termctl = { git = "https://github.com/thatstoasty/termctl.git", tag = "v0.2.0" }
+termctl = { git = "https://github.com/thatstoasty/termctl.git", tag = "v0.2.1" }
 
 [package.host-dependencies]
 mojo-compiler = ">=1.1.0,<1.2.0"
@@ -42,4 +42,4 @@ mojo-compiler = ">=1.1.0,<1.2.0"
 [package.run-dependencies]
 mojo = ">=1.1.0,<1.2.0"
 mog = { git = "https://github.com/thatstoasty/mog.git", tag = "v0.3.3" }
-termctl = { git = "https://github.com/thatstoasty/termctl.git", tag = "v0.2.0" }
+termctl = { git = "https://github.com/thatstoasty/termctl.git", tag = "v0.2.1" }
