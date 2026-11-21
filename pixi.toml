@@ -21,7 +21,7 @@ format = [{ task = "mojo_format" }]
 
 [package]
 name = "banjo"
-version = "0.0.2"
+version = "0.1.0"
 
 [package.build]
 backend = { name = "pixi-build-mojo", version = "0.*" }
