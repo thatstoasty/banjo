@@ -15,7 +15,7 @@ for i in range(bounds[0], bounds[1]):
 ```
 """
 
-from termctl.event.event import Char, KeyCode, KeyEvent, Left, PageDown, PageUp, Right
+from termctl.event.event import KeyCode, KeyEvent
 
 from banjo.components.key import Binding, Help, matches, press
 from banjo.constants import SMALL_BUFFER_SIZE
@@ -46,11 +46,11 @@ struct KeyMap(Copyable):
     def __init__(out self):
         """Creates the default bindings: h/left/pgup and l/right/pgdown."""
         self.prev_page = Binding(
-            keys=[PageUp(), Left(), Char("h")],
+            keys=[press(KeyCode.page_up), press(KeyCode.left), press(KeyCode.from_string("h"))],
             help=Help("h/left", "previous page"),
         )
         self.next_page = Binding(
-            keys=[PageDown(), Right(), Char("l")],
+            keys=[press(KeyCode.page_down), press(KeyCode.right), press(KeyCode.from_string("l"))],
             help=Help("l/right", "next page"),
         )
 

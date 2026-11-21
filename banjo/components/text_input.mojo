@@ -20,7 +20,7 @@ import mog
 from mist.transform.ansi import string_width
 
 from banjo.components.key import Binding, Help, matches, press
-from termctl.event.event import Backspace, Char, Delete, End, Home, KeyEvent, KeyModifiers, Left, Right
+from termctl.event.event import KeyCode, KeyEvent, KeyModifiers
 
 
 @fieldwise_init
@@ -44,13 +44,13 @@ struct KeyMap(Copyable):
 
     def __init__(out self):
         """Creates the default bindings."""
-        self.backspace = Binding([press(Backspace())], Help("backspace", "delete back"))
-        self.delete = Binding([press(Delete())], Help("delete", "delete"))
-        self.left = Binding([press(Left())], Help("left", "left"))
-        self.right = Binding([press(Right())], Help("right", "right"))
-        self.start = Binding([press(Home())], Help("home", "start"))
-        self.end = Binding([press(End())], Help("end", "end"))
-        self.clear = Binding([press(Char("u"), KeyModifiers.CONTROL)], Help("ctrl+u", "clear"))
+        self.backspace = Binding([press(KeyCode.backspace)], Help("backspace", "delete back"))
+        self.delete = Binding([press(KeyCode.delete)], Help("delete", "delete"))
+        self.left = Binding([press(KeyCode.left)], Help("left", "left"))
+        self.right = Binding([press(KeyCode.right)], Help("right", "right"))
+        self.start = Binding([press(KeyCode.home)], Help("home", "start"))
+        self.end = Binding([press(KeyCode.end)], Help("end", "end"))
+        self.clear = Binding([press(KeyCode.from_string("u"), KeyModifiers.CONTROL)], Help("ctrl+u", "clear"))
 
 
 def _grapheme_count(text: StringSpan) -> Int:
@@ -342,9 +342,13 @@ struct TextInput(Copyable):
 
         # Anything else that is a plain character is typed into the value.
         # Control chords are left for the application to interpret.
-        if event.code.isa[Char]() and not event.modifiers.contains(KeyModifiers.CONTROL):
-            self.insert(String(event.code[Char].char))
-            return True
+        if not event.modifiers.contains(KeyModifiers.CONTROL):
+            match event.code:
+                case .char(c):
+                    self.insert(String(c))
+                    return True
+                case _:
+                    pass
 
         return False
 

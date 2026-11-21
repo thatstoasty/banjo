@@ -13,7 +13,7 @@ from banjo.components.text_input import TextInput
 from banjo.components.help import HelpView
 from banjo.components.key import Binding, Help, press
 from banjo.components.list import ListItem, ListState, ListView
-from termctl.event.event import Char, Enter, Esc, Event, KeyEvent
+from termctl.event.event import Event, KeyCode, KeyEvent
 from termctl.multiplex import DefaultSelector
 import mog
 from mog import Profile
@@ -94,7 +94,7 @@ struct Model(Program):
     var done: Bool
 
     def __init__(out self) raises:
-        var styles = DefaultItemStyles(Profile.ANSI)
+        var styles = DefaultItemStyles(Profile.ansi)
         var items = List[ListItem]()
         for ref fruit in fruits():
             items.append(default_item(fruit[0].copy(), fruit[1].copy(), styles))
@@ -108,8 +108,8 @@ struct Model(Program):
             self.view_.keymap.down.copy(),
             self.view_.keymap.first.copy(),
             self.view_.keymap.last.copy(),
-            Binding([press(Char("/"))], Help("/", "filter")),
-            Binding([press(Char("q"))], Help("q", "quit")),
+            Binding([press(KeyCode.from_string("/"))], Help("/", "filter")),
+            Binding([press(KeyCode.from_string("q"))], Help("q", "quit")),
         ]
 
         self.state = ListState()
@@ -124,9 +124,10 @@ struct Model(Program):
 
     @staticmethod
     def on_event(event: Event) raises -> Optional[Msg]:
-        if not event.isa[KeyEvent]():
+        var maybe_key = event.as_key_event()
+        if not maybe_key:
             return None
-        var key = event[KeyEvent]
+        var key = maybe_key.value()
         # `q` quits, but only when it is not being typed into the filter box.
         # The model decides that, so the raw key is forwarded either way.
         return Msg(key)
@@ -176,7 +177,7 @@ struct Model(Program):
 
         if msg.isa[KeyEvent]() and not self.filtering:
             var pressed = msg[KeyEvent]
-            if pressed.code.isa[Char]() and (pressed.code[Char] == "q" or pressed.code[Char] == "Q"):
+            if (pressed.code == KeyCode.from_string("q") or pressed.code == KeyCode.from_string("Q")):
                 self.done = True
                 return None
         if not msg.isa[KeyEvent]():
@@ -185,19 +186,19 @@ struct Model(Program):
         var key = msg[KeyEvent]
 
         if self.filtering:
-            if key.code.isa[Esc]():
+            if key.code == KeyCode.esc:
                 self.filtering = False
                 self.filter_input.reset()
                 self.rebuild()
                 return None
-            if key.code.isa[Enter]():
+            if key.code == KeyCode.enter:
                 self.filtering = False
                 return None
             if self.filter_input.update(key):
                 self.rebuild()
             return None
 
-        if key.code.isa[Char]() and key.code[Char] == "/":
+        if key.code == KeyCode.from_string("/"):
             self.filtering = True
             return None
 

@@ -10,7 +10,7 @@ from std.utils.variant import Variant
 from banjo.app import Program, Runtime
 from banjo.components.progress import ProgressBar
 from banjo.components.spinner import Spinner
-from termctl.event.event import Char, Event, KeyEvent
+from termctl.event.event import Event, KeyEvent
 from termctl.multiplex import DefaultSelector
 import mog
 from mog import Profile
@@ -70,8 +70,8 @@ struct Model(Program):
 
     def __init__(out self) raises:
         self.bar = ProgressBar(width=48)
-        self.bar.full_style = mog.Style(Profile.ANSI).foreground(mog.Color(2))
-        self.bar.empty_style = mog.Style(Profile.ANSI).foreground(mog.Color(8))
+        self.bar.full_style = mog.Style(Profile.ansi).foreground(mog.Color(2))
+        self.bar.empty_style = mog.Style(Profile.ansi).foreground(mog.Color(8))
 
         self.plain = ProgressBar(width=48)
         self.plain.show_percentage = False
@@ -85,9 +85,10 @@ struct Model(Program):
 
     @staticmethod
     def on_event(event: Event) raises -> Optional[Msg]:
-        if not event.isa[KeyEvent]():
+        var key = event.as_key_event()
+        if not key:
             return None
-        return Msg(event[KeyEvent])
+        return Msg(key.value())
 
     def on_tick(mut self, tag: Int) raises -> Optional[Msg]:
         if tag == STEP_TIMER and self.running and self.percent < 1.0:
@@ -113,8 +114,13 @@ struct Model(Program):
 
         if msg.isa[KeyEvent]():
             ref code = msg[KeyEvent].code
-            if code.isa[Char]():
-                var c = code[Char]
+            var c = String()
+            match code:
+                case .char(cp):
+                    c = String(cp)
+                case _:
+                    pass
+            if c.byte_length() > 0:
                 if c == "q" or c == "Q":
                     self.done = True
                 elif c == " ":

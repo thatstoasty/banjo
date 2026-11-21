@@ -1,7 +1,7 @@
 from std.testing import TestSuite, assert_equal, assert_true
 from std.utils.variant import Variant
 
-from termctl.event.event import Char, Event, KeyEvent, KeyModifiers
+from termctl.event.event import Event, KeyCode, KeyEvent, KeyModifiers
 
 from banjo.app import Program, dispatch
 
@@ -104,7 +104,7 @@ def test_dispatch_delivers_the_message() raises:
 
 def test_dispatch_delivers_a_key_and_its_follow_up() raises:
     var app = Counter()
-    dispatch(app, Msg(KeyEvent(Char("q"), KeyModifiers.NONE)))
+    dispatch(app, Msg(KeyEvent(KeyCode.from_string("q"), KeyModifiers.NONE)))
     assert_true(app.done)
     assert_equal(app.updates, 2)
 

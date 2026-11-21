@@ -1,6 +1,6 @@
 from std.testing import TestSuite, assert_equal, assert_true, assert_false
 
-from termctl.event.event import Char, Down, Up
+from termctl.event.event import KeyCode
 
 from banjo.components.help import HelpView
 from banjo.components.key import Binding, Help, press
@@ -8,9 +8,9 @@ from banjo.components.key import Binding, Help, press
 
 def _bindings() raises -> List[Binding]:
     return [
-        Binding([press(Up())], Help("↑/k", "up")),
-        Binding([press(Down())], Help("↓/j", "down")),
-        Binding([press(Char("q"))], Help("q", "quit")),
+        Binding([press(KeyCode.up)], Help("↑/k", "up")),
+        Binding([press(KeyCode.down)], Help("↓/j", "down")),
+        Binding([press(KeyCode.from_string("q"))], Help("q", "quit")),
     ]
 
 
@@ -63,8 +63,8 @@ def test_short_view_untruncated_when_it_fits() raises:
 def test_full_view_builds_columns() raises:
     var h = HelpView()
     var groups = List[List[Binding]]()
-    groups.append([Binding([press(Up())], Help("↑/k", "up")), Binding([press(Down())], Help("↓/j", "down"))])
-    groups.append([Binding([press(Char("q"))], Help("q", "quit"))])
+    groups.append([Binding([press(KeyCode.up)], Help("↑/k", "up")), Binding([press(KeyCode.down)], Help("↓/j", "down"))])
+    groups.append([Binding([press(KeyCode.from_string("q"))], Help("q", "quit"))])
 
     var lines = h.full_view(groups).splitlines()
     # Two rows, because the tallest column has two bindings.
@@ -77,9 +77,9 @@ def test_full_view_builds_columns() raises:
 def test_full_view_drops_empty_columns() raises:
     var h = HelpView()
     var groups = List[List[Binding]]()
-    groups.append([Binding([press(Up())], Help("↑/k", "up"))])
+    groups.append([Binding([press(KeyCode.up)], Help("↑/k", "up"))])
 
-    var disabled = Binding([press(Char("q"))], Help("q", "quit"))
+    var disabled = Binding([press(KeyCode.from_string("q"))], Help("q", "quit"))
     disabled.set_enabled(False)
     groups.append([disabled^])
 

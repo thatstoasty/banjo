@@ -173,7 +173,7 @@ output
 .vscode/
 
 # Mojo
-*.mojopkg
+*.mojoc
 kgen.*
 *.dSYM
 

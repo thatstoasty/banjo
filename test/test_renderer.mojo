@@ -1,5 +1,6 @@
 from std.testing import TestSuite, assert_equal, assert_true, assert_false
 
+from std.io import RawFileDescriptor
 from banjo.renderer import Renderer
 
 
@@ -28,7 +29,7 @@ def _rendered_at(frames: List[String], width: UInt16, height: UInt16) raises -> 
     """
     var path = String("/tmp/banjo_test_renderer_sized.txt")
     var handle = open(path, "w")
-    var renderer = Renderer(FileDescriptor(handle._get_raw_fd()), 60)
+    var renderer = Renderer(RawFileDescriptor(Int32(handle._get_raw_fd())), 60)
     renderer.width = width
     renderer.height = height
     for ref frame in frames:
@@ -59,7 +60,7 @@ def _rendered(frames: List[String]) raises -> String:
     """
     var path = String("/tmp/banjo_test_renderer.txt")
     var handle = open(path, "w")
-    var renderer = Renderer(FileDescriptor(handle._get_raw_fd()), 60)
+    var renderer = Renderer(RawFileDescriptor(Int32(handle._get_raw_fd())), 60)
     for ref frame in frames:
         renderer.write(frame)
     handle.close()
@@ -123,7 +124,7 @@ def test_a_file_is_not_a_terminal() raises:
     # guess, which is what keeps truncation off when the size is unknown.
     var path = String("/tmp/banjo_test_renderer_notty.txt")
     var handle = open(path, "w")
-    var renderer = Renderer(FileDescriptor(handle._get_raw_fd()), 60)
+    var renderer = Renderer(RawFileDescriptor(Int32(handle._get_raw_fd())), 60)
 
     assert_equal(renderer.width, 0)
     assert_false(renderer.refresh_size())

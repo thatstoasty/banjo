@@ -1,6 +1,6 @@
 from std.testing import TestSuite, assert_equal, assert_true, assert_false
 
-from termctl.event.event import Char, KeyCode, KeyEvent, KeyModifiers, Down, End, Home, Up
+from termctl.event.event import KeyCode, KeyEvent, KeyModifiers
 
 import mog
 
@@ -287,18 +287,18 @@ def test_update_moves_selection() raises:
     var v = _view(5)
     var s = ListState()
 
-    assert_true(v.update(_key(Down()), s, 10))
+    assert_true(v.update(_key(KeyCode.down), s, 10))
     assert_equal(s.selected.value(), 0)
-    assert_true(v.update(_key(Down()), s, 10))
+    assert_true(v.update(_key(KeyCode.down), s, 10))
     assert_equal(s.selected.value(), 1)
-    assert_true(v.update(_key(Char("j")), s, 10))
+    assert_true(v.update(_key(KeyCode.from_string("j")), s, 10))
     assert_equal(s.selected.value(), 2)
 
-    assert_true(v.update(_key(Up()), s, 10))
+    assert_true(v.update(_key(KeyCode.up), s, 10))
     assert_equal(s.selected.value(), 1)
-    assert_true(v.update(_key(End()), s, 10))
+    assert_true(v.update(_key(KeyCode.end), s, 10))
     assert_equal(s.selected.value(), 4)
-    assert_true(v.update(_key(Home()), s, 10))
+    assert_true(v.update(_key(KeyCode.home), s, 10))
     assert_equal(s.selected.value(), 0)
 
 
@@ -308,9 +308,9 @@ def test_update_reports_no_change() raises:
     s.select(0)
 
     # Already at the top; moving up changes nothing.
-    assert_false(v.update(_key(Up()), s, 10))
+    assert_false(v.update(_key(KeyCode.up), s, 10))
     # An unbound key changes nothing.
-    assert_false(v.update(_key(Char("z")), s, 10))
+    assert_false(v.update(_key(KeyCode.from_string("z")), s, 10))
 
 
 def main() raises:

@@ -11,9 +11,9 @@ from std.utils.variant import Variant
 
 from banjo.app import Program, Runtime
 from banjo.components.help import HelpView
-from banjo.components.key import Binding, Help, matches
+from banjo.components.key import Binding, Help, matches, press
 from banjo.components.text_input import TextInput
-from termctl.event.event import Char, Esc, Event, KeyEvent, Tab
+from termctl.event.event import Event, KeyCode, KeyEvent
 from termctl.multiplex import DefaultSelector
 import mog
 from mog import Profile
@@ -52,8 +52,8 @@ struct Model(Program):
     var done: Bool
 
     def __init__(out self) raises:
-        var accent = mog.Style(Profile.ANSI).foreground(mog.Color(5))
-        var dim = mog.Style(Profile.ANSI).foreground(mog.Color(8))
+        var accent = mog.Style(Profile.ansi).foreground(mog.Color(5))
+        var dim = mog.Style(Profile.ansi).foreground(mog.Color(8))
 
         self.name = TextInput()
         self.name.prompt = "  name   > "
@@ -71,19 +71,20 @@ struct Model(Program):
         self.focus_narrow = False
         self.help = HelpView(width=76)
         self.bindings = [
-            Binding(keys=[Tab()], help=Help("tab", "switch field")),
+            Binding(keys=[press(KeyCode.tab)], help=Help("tab", "switch field")),
             self.name.keymap.left.copy(),
             self.name.keymap.right.copy(),
             self.name.keymap.clear.copy(),
-            Binding(keys=[Esc()], help=Help("esc", "quit")),
+            Binding(keys=[press(KeyCode.esc)], help=Help("esc", "quit")),
         ]
         self.done = False
 
     @staticmethod
     def on_event(event: Event) raises -> Optional[Msg]:
-        if not event.isa[KeyEvent]():
+        var key = event.as_key_event()
+        if not key:
             return None
-        return Msg(event[KeyEvent])
+        return Msg(key.value())
 
     def on_tick(mut self, tag: Int) raises -> Optional[Msg]:
         return None
@@ -96,11 +97,11 @@ struct Model(Program):
             return None
 
         var key = msg[KeyEvent]
-        if key.code.isa[Esc]():
+        if key.code == KeyCode.esc:
             self.done = True
             return None
 
-        if key.code.isa[Tab]():
+        if key.code == KeyCode.tab:
             self.focus_narrow = not self.focus_narrow
             return None
 

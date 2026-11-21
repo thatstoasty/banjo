@@ -7,7 +7,7 @@ from banjo.components.default_item import DefaultItemStyles, default_item
 
 def _styles() raises -> DefaultItemStyles:
     # ASCII keeps the rendered output free of colour codes so it can be asserted on.
-    return DefaultItemStyles(Profile.ASCII)
+    return DefaultItemStyles(Profile.ascii)
 
 
 def test_item_has_title_and_description() raises:

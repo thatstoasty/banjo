@@ -27,7 +27,7 @@ from mist.transform.ansi import string_width
 
 from banjo.constants import SMALL_BUFFER_SIZE
 from banjo.components.key import Binding, Help, matches, press
-from termctl.event.event import Char, Down, End, Home, KeyEvent, PageDown, PageUp, Up
+from termctl.event.event import KeyCode, KeyEvent
 
 
 @fieldwise_init
@@ -231,12 +231,12 @@ struct KeyMap(Copyable):
 
     def __init__(out self):
         """Creates the default bindings."""
-        self.up = Binding(help=Help("up/k", "up"), keys=[Up(), Char("k")])
-        self.down = Binding(help=Help("down/j", "down"), keys=[Down(), Char("j")])
-        self.page_up = Binding(help=Help("pgup/b", "page up"), keys=[PageUp(), Char("b")])
-        self.page_down = Binding(help=Help("pgdn/f", "page down"), keys=[PageDown(), Char("f")])
-        self.first = Binding(help=Help("home/g", "go to start"), keys=[Home(), Char("g")])
-        self.last = Binding(help=Help("end/G", "go to end"), keys=[End(), Char("G")])
+        self.up = Binding(help=Help("up/k", "up"), keys=[press(KeyCode.up), press(KeyCode.from_string("k"))])
+        self.down = Binding(help=Help("down/j", "down"), keys=[press(KeyCode.down), press(KeyCode.from_string("j"))])
+        self.page_up = Binding(help=Help("pgup/b", "page up"), keys=[press(KeyCode.page_up), press(KeyCode.from_string("b"))])
+        self.page_down = Binding(help=Help("pgdn/f", "page down"), keys=[press(KeyCode.page_down), press(KeyCode.from_string("f"))])
+        self.first = Binding(help=Help("home/g", "go to start"), keys=[press(KeyCode.home), press(KeyCode.from_string("g"))])
+        self.last = Binding(help=Help("end/G", "go to end"), keys=[press(KeyCode.end), press(KeyCode.from_string("G"))])
 
 
 struct ListView(Copyable):

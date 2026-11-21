@@ -8,9 +8,9 @@ from std.utils.variant import Variant
 
 from banjo.app import Program, Runtime
 from banjo.components.help import HelpView
-from banjo.components.key import Binding, Help
+from banjo.components.key import Binding, Help, press
 from banjo.components.table import Column, Table, TableState
-from termctl.event.event import Char, Event, KeyEvent
+from termctl.event.event import Event, KeyCode, KeyEvent
 from termctl.multiplex import DefaultSelector
 import mog
 from mog import Profile
@@ -79,10 +79,10 @@ struct Model(Program):
             Column("Language", 12),
             Column("Stars", 6),
         ]
-        self.table = Table(columns^, projects(), border=mog.ROUNDED_BORDER)
-        self.table.border_style = mog.Style(Profile.ANSI).foreground(mog.Color(8))
-        self.table.styles.header = mog.Style(Profile.ANSI).foreground(mog.Color(6))
-        self.table.styles.selected = mog.Style(Profile.ANSI).foreground(mog.Color(5)).reverse(True)
+        self.table = Table(columns^, projects(), border=mog.Border.ROUNDED)
+        self.table.border_style = mog.Style(Profile.ansi).foreground(mog.Color(8))
+        self.table.styles.header = mog.Style(Profile.ansi).foreground(mog.Color(6))
+        self.table.styles.selected = mog.Style(Profile.ansi).foreground(mog.Color(5)).reverse(True)
 
         self.state = TableState()
         self.state.select(0)
@@ -94,15 +94,16 @@ struct Model(Program):
             self.table.keymap.page_down.copy(),
             self.table.keymap.first.copy(),
             self.table.keymap.last.copy(),
-            Binding(keys=[Char("q")], help=Help("q", "quit")),
+            Binding(keys=[press(KeyCode.from_string("q"))], help=Help("q", "quit")),
         ]
         self.done = False
 
     @staticmethod
     def on_event(event: Event) raises -> Optional[Msg]:
-        if not event.isa[KeyEvent]():
+        var key = event.as_key_event()
+        if not key:
             return None
-        return Msg(event[KeyEvent])
+        return Msg(key.value())
 
     def on_tick(mut self, tag: Int) raises -> Optional[Msg]:
         return None
@@ -115,7 +116,7 @@ struct Model(Program):
             return
 
         ref key = msg[KeyEvent]
-        if key.code.isa[Char]() and (key.code[Char] == "q" or key.code[Char] == "Q"):
+        if (key.code == KeyCode.from_string("q") or key.code == KeyCode.from_string("Q")):
             self.done = True
             return
 

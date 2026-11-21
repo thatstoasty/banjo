@@ -9,7 +9,7 @@ from std.utils.variant import Variant
 
 from banjo.app import Program, Runtime
 from banjo.components.spinner import Spinner, Frames
-from termctl.event.event import Char, Event, KeyEvent
+from termctl.event.event import KeyCode, Event, KeyEvent
 from termctl.multiplex import DefaultSelector
 import mog
 from mog import Profile
@@ -74,7 +74,7 @@ struct Model(Program):
             "moon",
         ]
 
-        var accent = mog.Style(Profile.ANSI).foreground(mog.Color(5))
+        var accent = mog.Style(Profile.ansi).foreground(mog.Color(5))
         for i in range(len(self.spinners)):
             self.spinners[i].style = accent.copy()
 
@@ -82,9 +82,10 @@ struct Model(Program):
 
     @staticmethod
     def on_event(event: Event) raises -> Optional[Msg]:
-        if not event.isa[KeyEvent]():
+        var key = event.as_key_event()
+        if not key:
             return None
-        return Msg(event[KeyEvent])
+        return Msg(key.value())
 
     def on_tick(mut self, tag: Int) raises -> Optional[Msg]:
         if tag == SPIN_TIMER:
@@ -102,7 +103,7 @@ struct Model(Program):
 
         if msg.isa[KeyEvent]():
             ref code = msg[KeyEvent].code
-            if code.isa[Char]() and (code[Char] == "q" or code[Char] == "Q"):
+            if code == KeyCode.from_string("q") or code == KeyCode.from_string("Q"):
                 self.done = True
         return None
 

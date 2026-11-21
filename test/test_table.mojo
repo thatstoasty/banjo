@@ -1,6 +1,6 @@
 from std.testing import TestSuite, assert_equal, assert_true, assert_false
 
-from termctl.event.event import Char, Down, End, Home, KeyCode, KeyEvent, KeyModifiers, PageDown, Up
+from termctl.event.event import KeyCode, KeyEvent, KeyModifiers
 
 import mog
 
@@ -81,7 +81,7 @@ def _bordered(border: mog.Border, rows: Int = 2, show_header: Bool = True) raise
 
 
 def test_border_frames_the_table() raises:
-    var lines = _bordered(mog.NORMAL_BORDER).render(5, TableState()).splitlines()
+    var lines = _bordered(mog.Border.NORMAL).render(5, TableState()).splitlines()
     assert_equal(String(lines[0]), "┌──────┬────┐")
     assert_equal(String(lines[1]), "│Name  │Qty │")
     assert_equal(String(lines[2]), "├──────┼────┤")
@@ -91,7 +91,7 @@ def test_border_frames_the_table() raises:
 
 
 def test_border_without_a_header_has_no_middle_rule() raises:
-    var lines = _bordered(mog.NORMAL_BORDER, show_header=False).render(5, TableState()).splitlines()
+    var lines = _bordered(mog.Border.NORMAL, show_header=False).render(5, TableState()).splitlines()
     assert_equal(len(lines), 4)
     assert_equal(String(lines[0]), "┌──────┬────┐")
     assert_equal(String(lines[1]), "│row0  │0   │")
@@ -102,7 +102,7 @@ def test_border_rules_are_not_counted_against_the_height() raises:
     # `height` is body rows, as it is without a border. The rules are extra,
     # the same way the heading already is.
     # top rule, heading, middle rule, three body rows, bottom rule.
-    var lines = _bordered(mog.NORMAL_BORDER, rows=10).render(3, TableState()).splitlines()
+    var lines = _bordered(mog.Border.NORMAL, rows=10).render(3, TableState()).splitlines()
     assert_equal(len(lines), 7)
 
 
@@ -111,7 +111,7 @@ def test_border_skips_zero_width_columns() raises:
     var body = List[List[String]]()
     var cells: List[String] = [String("x"), String("y")]
     body.append(cells^)
-    var t = Table(columns^, body^, border=mog.NORMAL_BORDER)
+    var t = Table(columns^, body^, border=mog.Border.NORMAL)
 
     var lines = t.render(5, TableState()).splitlines()
     assert_equal(String(lines[0]), "┌───┐")
@@ -127,8 +127,8 @@ def test_a_selected_row_is_styled_across_the_separators() raises:
     var body = List[List[String]]()
     var cells: List[String] = [String("x"), String("y")]
     body.append(cells^)
-    var t = Table(columns^, body^, show_header=False, border=mog.NORMAL_BORDER)
-    t.styles.selected = mog.Style(mog.Profile.ANSI).reverse()
+    var t = Table(columns^, body^, show_header=False, border=mog.Border.NORMAL)
+    t.styles.selected = mog.Style(mog.Profile.ansi).reverse()
 
     var state = TableState()
     state.selected = 0
@@ -137,8 +137,8 @@ def test_a_selected_row_is_styled_across_the_separators() raises:
 
 
 def test_border_style_wraps_the_rules() raises:
-    var t = _bordered(mog.NORMAL_BORDER, show_header=False)
-    t.border_style = mog.Style(mog.Profile.ANSI).foreground(mog.Color(5))
+    var t = _bordered(mog.Border.NORMAL, show_header=False)
+    t.border_style = mog.Style(mog.Profile.ansi).foreground(mog.Color(5))
     var lines = t.render(5, TableState()).splitlines()
     assert_equal(String(lines[0]), "\x1b[35m┌──────┬────┐\x1b[0m")
     # The edges of a row are styled too, but the cells are left alone.
@@ -201,16 +201,16 @@ def test_keys_move_the_selection() raises:
     var t = _table(10)
     var state = TableState()
 
-    assert_true(t.update(_key(Down()), state, 3))
+    assert_true(t.update(_key(KeyCode.down), state, 3))
     assert_equal(state.selected.value(), 0)
-    assert_true(t.update(_key(Char("j")), state, 3))
+    assert_true(t.update(_key(KeyCode.from_string("j")), state, 3))
     assert_equal(state.selected.value(), 1)
-    assert_true(t.update(_key(Up()), state, 3))
+    assert_true(t.update(_key(KeyCode.up), state, 3))
     assert_equal(state.selected.value(), 0)
 
-    assert_true(t.update(_key(End()), state, 3))
+    assert_true(t.update(_key(KeyCode.end), state, 3))
     assert_equal(state.selected.value(), 9)
-    assert_true(t.update(_key(Home()), state, 3))
+    assert_true(t.update(_key(KeyCode.home), state, 3))
     assert_equal(state.selected.value(), 0)
 
 
@@ -218,7 +218,7 @@ def test_page_down_moves_by_a_screenful() raises:
     var t = _table(10)
     var state = TableState()
     state.select(0)
-    assert_true(t.update(_key(PageDown()), state, 3))
+    assert_true(t.update(_key(KeyCode.page_down), state, 3))
     assert_equal(state.selected.value(), 3)
 
 
@@ -226,7 +226,7 @@ def test_unbound_key_changes_nothing() raises:
     var t = _table(5)
     var state = TableState()
     state.select(0)
-    assert_false(t.update(_key(Char("z")), state, 3))
+    assert_false(t.update(_key(KeyCode.from_string("z")), state, 3))
 
 
 def test_selected_row_is_reported() raises:

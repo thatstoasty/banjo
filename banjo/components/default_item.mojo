@@ -7,7 +7,7 @@ from your data to a `ListItem`, which is what ratatui expects of an
 application anyway.
 
 ```mojo
-var styles = DefaultItemStyles(Profile.ANSI)
+var styles = DefaultItemStyles(Profile.ansi)
 items.append(default_item("Raspberry", "A red berry", styles))
 ```
 
@@ -48,14 +48,14 @@ struct DefaultItemStyles(Copyable):
         self.normal_desc = mog.Style(profile, padding=mog.Padding(left=2)).foreground(mog.Color(0x777777))
         self.selected_title = (
             mog.Style(profile, padding=mog.Padding(left=1))
-            .border(mog.NORMAL_BORDER)
+            .border(mog.Border.NORMAL)
             .border_side_rendering(top=False, right=False, bottom=False, left=True)
             .border_foreground(mog.Color(0xAD58B4))
             .foreground(mog.Color(0xEE6FF8))
         )
         self.selected_desc = (
             mog.Style(profile, padding=mog.Padding(left=1))
-            .border(mog.NORMAL_BORDER)
+            .border(mog.Border.NORMAL)
             .border_side_rendering(top=False, right=False, bottom=False, left=True)
             .border_foreground(mog.Color(0xAD58B4))
             .foreground(mog.Color(0xAD58B4))

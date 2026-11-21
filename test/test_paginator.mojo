@@ -1,6 +1,6 @@
 from std.testing import TestSuite, assert_equal, assert_true, assert_false
 
-from termctl.event.event import Char, KeyCode, KeyEvent, KeyModifiers, Left, Right
+from termctl.event.event import KeyCode, KeyEvent, KeyModifiers
 
 from banjo.components.paginator import Layout, Paginator
 
@@ -66,20 +66,20 @@ def test_navigation_clamps_at_both_ends() raises:
 def test_keys_move_pages() raises:
     var p = Paginator(items=25, per_page=10)
 
-    p.update(_key(Right()))
+    p.update(_key(KeyCode.right))
     assert_equal(p.page, 1)
-    p.update(_key(Char("l")))
+    p.update(_key(KeyCode.from_string("l")))
     assert_equal(p.page, 2)
-    p.update(_key(Char("l")))
+    p.update(_key(KeyCode.from_string("l")))
     assert_equal(p.page, 2)
 
-    p.update(_key(Left()))
+    p.update(_key(KeyCode.left))
     assert_equal(p.page, 1)
-    p.update(_key(Char("h")))
+    p.update(_key(KeyCode.from_string("h")))
     assert_equal(p.page, 0)
 
     # An unbound key changes nothing.
-    p.update(_key(Char("z")))
+    p.update(_key(KeyCode.from_string("z")))
     assert_equal(p.page, 0)
 
 

@@ -13,8 +13,8 @@ struct KeyMap(Copyable):
     var down: Binding
 
     def __init__(out self):
-        self.up = Binding([press(Char("k")), press(Up())], Help("up/k", "move up"))
-        self.down = Binding([press(Char("j")), press(Down())], Help("down/j", "move down"))
+        self.up = Binding([press(KeyCode.from_string("k")), press(KeyCode.up)], Help("up/k", "move up"))
+        self.down = Binding([press(KeyCode.from_string("j")), press(KeyCode.down)], Help("down/j", "move down"))
 
 # in update:
 if matches(event, keymap.up):
@@ -22,7 +22,7 @@ if matches(event, keymap.up):
 ```
 """
 
-from termctl.event.event import Char, KeyCode, KeyEvent, KeyModifiers
+from termctl.event.event import KeyCode, KeyEvent, KeyModifiers
 
 
 def press(code: KeyCode, modifiers: KeyModifiers = KeyModifiers.NONE) -> KeyEvent:

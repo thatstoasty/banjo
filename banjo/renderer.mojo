@@ -19,7 +19,7 @@ comptime EraseEntireDisplay = CSI + "3J"
 struct Renderer(Copyable):
     """A simple renderer that prints to the terminal."""
 
-    var writer: FileDescriptor
+    var writer: RawFileDescriptor
     var buf: String
     var queued_message_lines: List[String]
     var framerate: Float64
@@ -51,7 +51,7 @@ struct Renderer(Copyable):
     # lines explicitly set not to render
     # var ignoreLines: map[int]struct{
 
-    def __init__(out self, writer: FileDescriptor, fps: Int):
+    def __init__(out self, writer: RawFileDescriptor, fps: Int):
         var framerate = Float64(fps)
         if framerate < 1:
             framerate = DEFAULT_FPS

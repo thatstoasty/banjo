@@ -1,7 +1,7 @@
 from std.utils.variant import Variant
 from termctl.terminal.tty import TTY, Mode
 from termctl.event.read import EventReader
-from termctl.event.event import KeyEvent, Event, Char, Enter, Up, Down, Left, Right
+from termctl.event.event import Event, KeyCode, KeyEvent
 import mog
 from mog import Position, Profile, join_vertical, join_horizontal
 from banjo.app import Program
@@ -85,12 +85,19 @@ struct Msg(ImplicitlyCopyable):
 
 
 def handle_event(event: Event) raises -> Optional[Msg]:
-    if not event.isa[KeyEvent]():
+    var maybe_key = event.as_key_event()
+
+    if not maybe_key:
         return
 
-    var key = event[KeyEvent]
-    if key.code.isa[Char]():
-        ref ch = key.code[Char]
+    var key = maybe_key.value()
+    var ch = String()
+    match key.code:
+        case .char(cp):
+            ch = String(cp)
+        case _:
+            pass
+    if ch.byte_length() > 0:
         if ch == "q" or ch == "Q":
             return Msg(Exit())
         elif ch == "r" or ch == "R":
@@ -107,30 +114,30 @@ def handle_event(event: Event) raises -> Optional[Msg]:
             return Msg(Direction.RIGHT)
         return
 
-    if key.code.isa[Up]():
+    if key.code == KeyCode.up:
         return Msg(Direction.UP)
-    elif key.code.isa[Down]():
+    elif key.code == KeyCode.down:
         return Msg(Direction.DOWN)
-    elif key.code.isa[Left]():
+    elif key.code == KeyCode.left:
         return Msg(Direction.LEFT)
-    elif key.code.isa[Right]():
+    elif key.code == KeyCode.right:
         return Msg(Direction.RIGHT)
-    elif key.code.isa[Enter]():
+    elif key.code == KeyCode.enter:
         return Msg(Start())
 
     return
 
 
 comptime PANEL = mog.Style(
-    Profile.ANSI,
+    Profile.ansi,
     width=66,
     padding=mog.Padding(1, 0),
     alignment=mog.Alignment(Position.LEFT),
-    border=mog.ROUNDED_BORDER,
+    border=mog.Border.ROUNDED,
 ).border_foreground(mog.Color(6))
-comptime TITLE = mog.Style(Profile.ANSI, foreground=mog.Color(2))
-comptime ALERT = mog.Style(Profile.ANSI, foreground=mog.Color(1))
-comptime SUCCESS = mog.Style(Profile.ANSI, foreground=mog.Color(10))
+comptime TITLE = mog.Style(Profile.ansi, foreground=mog.Color(2))
+comptime ALERT = mog.Style(Profile.ansi, foreground=mog.Color(1))
+comptime SUCCESS = mog.Style(Profile.ansi, foreground=mog.Color(10))
 comptime STEP_TIMER = 0
 """Tag for the timer that advances the snake."""
 comptime SPIN_TIMER = 1
@@ -200,10 +207,10 @@ struct Model(Program):
         self.best = None
         self.spin = 0
         self.board_style = mog.Style(
-            Profile.ANSI,
+            Profile.ansi,
             foreground=mog.Color(7),
-            border=mog.ROUNDED_BORDER,
-        ).width(UInt16(self.width * 2)).height(UInt16(self.height))
+            border=mog.Border.ROUNDED,
+        ).width(UInt(self.width * 2)).height(UInt(self.height))
 
     @staticmethod
     def on_event(event: Event) raises -> Optional[Msg]:

@@ -1,6 +1,6 @@
 from std.testing import TestSuite, assert_equal, assert_true, assert_false
 
-from termctl.event.event import Backspace, Char, Delete, End, Home, KeyCode, KeyEvent, KeyModifiers, Left, Right
+from termctl.event.event import KeyCode, KeyEvent, KeyModifiers
 
 from banjo.components.text_input import TextInput
 
@@ -12,7 +12,7 @@ def _key(code: KeyCode, modifiers: KeyModifiers = KeyModifiers.NONE) -> KeyEvent
 def _typed(text: String) raises -> TextInput:
     var input = TextInput()
     for codepoint in text.codepoint_slices():
-        _ = input.update(_key(Char(codepoint)))
+        _ = input.update(_key(KeyCode.from_string(codepoint)))
     return input^
 
 
@@ -24,59 +24,59 @@ def test_typing_appends() raises:
 
 def test_backspace_deletes_before_cursor() raises:
     var input = _typed(String("abc"))
-    assert_true(input.update(_key(Backspace())))
+    assert_true(input.update(_key(KeyCode.backspace)))
     assert_equal(input.value, "ab")
     assert_equal(input.cursor, 2)
 
 
 def test_backspace_at_start_is_a_no_op() raises:
     var input = TextInput()
-    assert_false(input.update(_key(Backspace())))
+    assert_false(input.update(_key(KeyCode.backspace)))
     assert_equal(input.value, "")
 
 
 def test_cursor_movement_and_insertion_in_middle() raises:
     var input = _typed(String("ac"))
-    assert_true(input.update(_key(Left())))
+    assert_true(input.update(_key(KeyCode.left)))
     assert_equal(input.cursor, 1)
-    _ = input.update(_key(Char("b")))
+    _ = input.update(_key(KeyCode.from_string("b")))
     assert_equal(input.value, "abc")
     assert_equal(input.cursor, 2)
 
 
 def test_delete_removes_under_cursor() raises:
     var input = _typed(String("abc"))
-    _ = input.update(_key(Home()))
-    assert_true(input.update(_key(Delete())))
+    _ = input.update(_key(KeyCode.home))
+    assert_true(input.update(_key(KeyCode.delete)))
     assert_equal(input.value, "bc")
     assert_equal(input.cursor, 0)
 
 
 def test_delete_at_end_is_a_no_op() raises:
     var input = _typed(String("ab"))
-    assert_false(input.update(_key(Delete())))
+    assert_false(input.update(_key(KeyCode.delete)))
     assert_equal(input.value, "ab")
 
 
 def test_home_and_end() raises:
     var input = _typed(String("hello"))
-    assert_true(input.update(_key(Home())))
+    assert_true(input.update(_key(KeyCode.home)))
     assert_equal(input.cursor, 0)
-    assert_false(input.update(_key(Home())))
-    assert_true(input.update(_key(End())))
+    assert_false(input.update(_key(KeyCode.home)))
+    assert_true(input.update(_key(KeyCode.end)))
     assert_equal(input.cursor, 5)
 
 
 def test_cursor_clamps_at_both_ends() raises:
     var input = _typed(String("ab"))
-    assert_false(input.update(_key(Right())))
-    _ = input.update(_key(Home()))
-    assert_false(input.update(_key(Left())))
+    assert_false(input.update(_key(KeyCode.right)))
+    _ = input.update(_key(KeyCode.home))
+    assert_false(input.update(_key(KeyCode.left)))
 
 
 def test_ctrl_u_clears() raises:
     var input = _typed(String("hello"))
-    assert_true(input.update(_key(Char("u"), KeyModifiers.CONTROL)))
+    assert_true(input.update(_key(KeyCode.from_string("u"), KeyModifiers.CONTROL)))
     assert_equal(input.value, "")
     assert_equal(input.cursor, 0)
 
@@ -84,7 +84,7 @@ def test_ctrl_u_clears() raises:
 def test_control_chords_are_not_typed() raises:
     var input = TextInput()
     # Left for the application to interpret, not inserted as text.
-    assert_false(input.update(_key(Char("a"), KeyModifiers.CONTROL)))
+    assert_false(input.update(_key(KeyCode.from_string("a"), KeyModifiers.CONTROL)))
     assert_equal(input.value, "")
 
 
@@ -92,11 +92,11 @@ def test_multibyte_cursor_steps_once_per_character() raises:
     var input = _typed(String("héllo"))
     assert_equal(input.length(), 5)
     assert_equal(input.cursor, 5)
-    _ = input.update(_key(Left()))
-    _ = input.update(_key(Left()))
-    _ = input.update(_key(Left()))
+    _ = input.update(_key(KeyCode.left))
+    _ = input.update(_key(KeyCode.left))
+    _ = input.update(_key(KeyCode.left))
     assert_equal(input.cursor, 2)
-    _ = input.update(_key(Backspace()))
+    _ = input.update(_key(KeyCode.backspace))
     assert_equal(input.value, "hllo")
 
 
@@ -107,7 +107,7 @@ def test_cursor_steps_over_a_grapheme_cluster_once() raises:
     input.set_value(String("e\u0301x"))
     assert_equal(input.length(), 2)
     assert_equal(input.cursor, 2)
-    _ = input.update(_key(Left()))
+    _ = input.update(_key(KeyCode.left))
     assert_equal(input.cursor, 1)
 
 
@@ -115,7 +115,7 @@ def test_backspace_deletes_a_whole_cluster() raises:
     var input = TextInput()
     input.set_value(String("a👩‍👩‍👧‍👦"))
     assert_equal(input.length(), 2)
-    assert_true(input.update(_key(Backspace())))
+    assert_true(input.update(_key(KeyCode.backspace)))
     assert_equal(input.value, "a")
     assert_equal(input.cursor, 1)
 
@@ -132,15 +132,15 @@ def test_typing_a_combining_mark_joins_the_character_before_it() raises:
 def test_delete_removes_a_whole_cluster_under_the_cursor() raises:
     var input = TextInput()
     input.set_value(String("🇬🇧z"))
-    _ = input.update(_key(Home()))
-    assert_true(input.update(_key(Delete())))
+    _ = input.update(_key(KeyCode.home))
+    assert_true(input.update(_key(KeyCode.delete)))
     assert_equal(input.value, "z")
 
 
 def test_view_shows_prompt_and_cursor() raises:
     var input = _typed(String("ab"))
     assert_equal(input.view(), "> ab▏")
-    _ = input.update(_key(Home()))
+    _ = input.update(_key(KeyCode.home))
     assert_equal(input.view(), "> ▏ab")
 
 
@@ -157,7 +157,7 @@ def test_view_scrolls_to_keep_cursor_visible() raises:
     assert_true("j" in out)
     assert_false("a" in out)
 
-    _ = input.update(_key(Home()))
+    _ = input.update(_key(KeyCode.home))
     var start = input.view()
     assert_true("a" in start)
     assert_false("j" in start)
@@ -171,14 +171,14 @@ def test_window_holds_still_while_the_cursor_moves() raises:
     input.prompt = String("")
     input.width = 5
     for codepoint in String("abcdefghij").codepoint_slices():
-        _ = input.update(_key(Char(codepoint)))
+        _ = input.update(_key(KeyCode.from_string(codepoint)))
 
     assert_equal(input.view(), "fghij▏")
-    _ = input.update(_key(Left()))
+    _ = input.update(_key(KeyCode.left))
     assert_equal(input.view(), "fghi▏j")
-    _ = input.update(_key(Left()))
+    _ = input.update(_key(KeyCode.left))
     assert_equal(input.view(), "fgh▏ij")
-    _ = input.update(_key(Left()))
+    _ = input.update(_key(KeyCode.left))
     assert_equal(input.view(), "fg▏hij")
 
 

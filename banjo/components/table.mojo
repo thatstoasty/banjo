@@ -20,7 +20,7 @@ from mist.transform.ansi import string_width
 
 from banjo.components.key import Binding, Help, matches, press
 from banjo.components.list import ListState
-from termctl.event.event import Char, Down, End, Home, KeyEvent, PageDown, PageUp, Up
+from termctl.event.event import KeyCode, KeyEvent
 
 
 comptime TableState = ListState
@@ -83,12 +83,12 @@ struct KeyMap(Copyable):
 
     def __init__(out self):
         """Creates the default bindings."""
-        self.up = Binding(keys=[Up(), Char("k")], help=Help("up/k", "up"))
-        self.down = Binding(keys=[Down(), Char("j")], help=Help("down/j", "down"))
-        self.page_up = Binding(keys=[PageUp(), Char("b")], help=Help("pgup/b", "page up"))
-        self.page_down = Binding(keys=[PageDown(), Char("f")], help=Help("pgdn/f", "page down"))
-        self.first = Binding(keys=[Home(), Char("g")], help=Help("home/g", "go to start"))
-        self.last = Binding(keys=[End(), Char("G")], help=Help("end/G", "go to end"))
+        self.up = Binding(keys=[press(KeyCode.up), press(KeyCode.from_string("k"))], help=Help("up/k", "up"))
+        self.down = Binding(keys=[press(KeyCode.down), press(KeyCode.from_string("j"))], help=Help("down/j", "down"))
+        self.page_up = Binding(keys=[press(KeyCode.page_up), press(KeyCode.from_string("b"))], help=Help("pgup/b", "page up"))
+        self.page_down = Binding(keys=[press(KeyCode.page_down), press(KeyCode.from_string("f"))], help=Help("pgdn/f", "page down"))
+        self.first = Binding(keys=[press(KeyCode.home), press(KeyCode.from_string("g"))], help=Help("home/g", "go to start"))
+        self.last = Binding(keys=[press(KeyCode.end), press(KeyCode.from_string("G"))], help=Help("end/G", "go to end"))
 
 
 struct Table(Copyable):
@@ -105,7 +105,7 @@ struct Table(Copyable):
     var border: Optional[mog.Border]
     """The box drawn around and between cells. None leaves the table unframed.
 
-    Any of `mog`'s borders works: `mog.ROUNDED_BORDER`, `mog.NORMAL_BORDER`,
+    Any of `mog`'s borders works: `mog.ROUNDED_BORDER`, `mog.Border.NORMAL`,
     `mog.ASCII_BORDER` and so on. The characters are used the way `mog.Table`
     uses them, so a border looks the same drawn by either.
     """

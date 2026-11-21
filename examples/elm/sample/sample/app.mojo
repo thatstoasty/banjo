@@ -2,7 +2,7 @@ from std.time import sleep
 from std.utils.variant import Variant
 from termctl.terminal.tty import TTY, Mode
 from termctl.event.read import EventReader
-from termctl.event.event import KeyType,KeyEvent, Event, Char, Enter, Up, Down
+from termctl.event.event import Event, KeyCode, KeyEvent
 import mog
 from mog import Position, Profile
 from banjo.app import Program
@@ -86,35 +86,37 @@ def handle_event(event: Event) raises -> Optional[Msg]:
     Returns:
         An optional message to update the model with. This can be None if no update is needed.
     """
-    if event.isa[KeyEvent]():
-        if event[KeyEvent].code.isa[Char]() and event[KeyEvent].code[Char] == "q":
+    var maybe_key = event.as_key_event()
+    if maybe_key:
+        var key = maybe_key.value()
+        if key.code == KeyCode.from_string("q"):
             return Msg(Exit())
-        elif event[KeyEvent].code.isa[Up]():
+        elif key.code == KeyCode.up:
             return Msg(Decrement())
-        elif event[KeyEvent].code.isa[Down]():
+        elif key.code == KeyCode.down:
             return Msg(Increment())
         else:
-            return Msg(event[KeyEvent])
+            return Msg(key)
     return
 
 
 comptime LEFT = mog.Style(
-    Profile.ANSI,
+    Profile.ansi,
     width=20,
     height=5,
-    border=mog.ROUNDED_BORDER,
+    border=mog.Border.ROUNDED,
     padding=mog.Padding(1, 0),
 ).border_foreground(mog.Color(8))
 comptime RIGHT = LEFT.text_alignment(Position.CENTER)
 comptime BORDER = mog.Style(
-    Profile.ANSI,
+    Profile.ansi,
     width=50,
     height=5,
     padding=mog.Padding(1, 0),
     alignment=mog.Alignment(Position.CENTER),
-    border=mog.ROUNDED_BORDER,
+    border=mog.Border.ROUNDED,
 ).border_foreground(mog.Color(5))
-comptime OPTION = mog.Style(Profile.ANSI, foreground=mog.Color(2))
+comptime OPTION = mog.Style(Profile.ansi, foreground=mog.Color(2))
 comptime SPIN_TIMER = 0
 """Tag for the timer that advances the loading indicator."""
 comptime SPINNER = StaticString("|/-\\")
@@ -214,7 +216,7 @@ struct Model(Program):
             self.last_key = String(msg[KeyEvent])
 
         if self.state == State.START:
-            if msg.isa[KeyEvent]() and msg[KeyEvent].code.isa[Enter]():
+            if msg.isa[KeyEvent]() and msg[KeyEvent].code == KeyCode.enter:
                 return Msg(State.MENU)
             return
         elif self.state == State.MENU:
@@ -226,7 +228,7 @@ struct Model(Program):
                 if self.index == 1:
                     self.index -= 1
                 return
-            elif msg.isa[KeyEvent]() and msg[KeyEvent].code.isa[Enter]():
+            elif msg.isa[KeyEvent]() and msg[KeyEvent].code == KeyCode.enter:
                 return Msg(State.END)
             return
         return

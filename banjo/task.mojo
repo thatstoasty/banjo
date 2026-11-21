@@ -21,7 +21,7 @@ way out: the loop asks the task to stop, and a task that does its work in slices
 checks `is_cancelled` between them and returns early.
 
 ```mojo
-async def load[o: MutOrigin](box: Pointer[Mailbox[Int], o]) -> None:
+__async def load[o: MutOrigin](box: Pointer[Mailbox[Int], o]) -> None:
     while more_to_do:
         if box[].is_cancelled():      # checked between slices of work
             return

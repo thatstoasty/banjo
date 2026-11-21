@@ -9,9 +9,9 @@ from std.utils.variant import Variant
 
 from banjo.app import Program, Runtime
 from banjo.components.help import HelpView
-from banjo.components.key import Binding, Help
+from banjo.components.key import Binding, Help, press
 from banjo.components.paginator import Layout, Paginator
-from termctl.event.event import Char, Event, KeyEvent
+from termctl.event.event import Event, KeyCode, KeyEvent
 from termctl.multiplex import DefaultSelector
 import mog
 from mog import Profile
@@ -68,22 +68,23 @@ struct Model(Program):
         var items = len(entries())
         self.pages = Paginator(items=UInt16(items), per_page=PER_PAGE)
         self.dots = Paginator(items=UInt16(items), layout=Layout.DOTS, per_page=PER_PAGE)
-        self.dots.active_dot = mog.Style(Profile.ANSI).foreground(mog.Color(5)).render("●")
-        self.dots.inactive_dot = mog.Style(Profile.ANSI).foreground(mog.Color(8)).render("○")
+        self.dots.active_dot = mog.Style(Profile.ansi).foreground(mog.Color(5)).render("●")
+        self.dots.inactive_dot = mog.Style(Profile.ansi).foreground(mog.Color(8)).render("○")
 
         self.help = HelpView(width=70)
         self.bindings = [
             self.pages.keymap.prev_page.copy(),
             self.pages.keymap.next_page.copy(),
-            Binding(keys=[Char("q")], help=Help("q", "quit")),
+            Binding(keys=[press(KeyCode.from_string("q"))], help=Help("q", "quit")),
         ]
         self.done = False
 
     @staticmethod
     def on_event(event: Event) raises -> Optional[Msg]:
-        if not event.isa[KeyEvent]():
+        var key = event.as_key_event()
+        if not key:
             return None
-        return Msg(event[KeyEvent])
+        return Msg(key.value())
 
     def on_tick(mut self, tag: Int) raises -> Optional[Msg]:
         return None
@@ -96,7 +97,7 @@ struct Model(Program):
             return None
 
         var key = msg[KeyEvent]
-        if key.code.isa[Char]() and (key.code[Char] == "q" or key.code[Char] == "Q"):
+        if (key.code == KeyCode.from_string("q") or key.code == KeyCode.from_string("Q")):
             self.done = True
             return None
 
