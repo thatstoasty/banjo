@@ -173,6 +173,10 @@ output
 .vscode/
 
 # Mojo
-*.mojopkg
+*.mojoc
 kgen.*
 *.dSYM
+
+# Repos
+bubbles
+ratatui-textarea

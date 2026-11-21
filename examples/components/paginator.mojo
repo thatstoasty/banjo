@@ -1,0 +1,141 @@
+"""Paging through a collection.
+
+The paginator holds only the arithmetic: which page is showing, how many there
+are, and which slice of a collection that corresponds to. Drawing the items is
+the application's job, which is why `slice_bounds` exists.
+"""
+
+from std.utils.variant import Variant
+
+from banjo.app import Program, Runtime
+from banjo.components.help import HelpView
+from banjo.components.key import Binding, Help, press
+from banjo.components.paginator import Layout, Paginator
+from termctl.event.event import Event, KeyCode, KeyEvent
+from termctl.multiplex import DefaultSelector
+import mog
+from mog import Profile
+
+
+comptime RENDER_HZ = 60.0
+"""The ceiling on repaints."""
+comptime PER_PAGE = 6
+"""How many entries fit on a page."""
+
+
+def entries() -> List[String]:
+    """The collection being paged through.
+
+    Returns:
+        The entries, in order.
+    """
+    return [
+        "aardvark", "badger", "capybara", "dormouse",
+        "echidna", "ferret", "gerbil", "hedgehog",
+        "ibex", "jerboa", "kinkajou", "lemur",
+        "marmot", "numbat", "ocelot", "pangolin",
+        "quokka", "raccoon", "serval", "tapir",
+    ]
+
+
+@fieldwise_init
+struct Msg(ImplicitlyCopyable):
+    """Everything this app can be told."""
+
+    var value: Variant[KeyEvent]
+
+    def isa[T: Copyable](self) -> Bool:
+        return self.value.isa[T]()
+
+    def __getitem_param__[T: Copyable](ref self) -> ref [origin_of(self.value)._get_owned_interior["value"]] T:
+        return self.value[T]
+
+
+struct Model(Program):
+    comptime Msg = Msg
+
+    var pages: Paginator
+    """Which page is showing, and how many there are."""
+    var dots: Paginator
+    """The same state drawn the other way, to show both layouts at once."""
+    var help: HelpView
+    """Renders the key bindings."""
+    var bindings: List[Binding]
+    """What the help view describes."""
+    var done: Bool
+
+    def __init__(out self) raises:
+        var items = len(entries())
+        self.pages = Paginator(items=UInt16(items), per_page=PER_PAGE)
+        self.dots = Paginator(items=UInt16(items), layout=Layout.DOTS, per_page=PER_PAGE)
+        self.dots.active_dot = mog.Style(Profile.ansi).foreground(mog.Color(5)).render("●")
+        self.dots.inactive_dot = mog.Style(Profile.ansi).foreground(mog.Color(8)).render("○")
+
+        self.help = HelpView(width=70)
+        self.bindings = [
+            self.pages.keymap.prev_page.copy(),
+            self.pages.keymap.next_page.copy(),
+            Binding(keys=[press(KeyCode.from_string("q"))], help=Help("q", "quit")),
+        ]
+        self.done = False
+
+    @staticmethod
+    def on_event(event: Event) raises -> Optional[Msg]:
+        var key = event.as_key_event()
+        if not key:
+            return None
+        return Msg(key.value())
+
+    def on_tick(mut self, tag: Int) raises -> Optional[Msg]:
+        return None
+
+    def on_result(mut self, value: Int) raises -> Optional[Msg]:
+        return None
+
+    def update(mut self, msg: Msg) raises -> Optional[Msg]:
+        if not msg.isa[KeyEvent]():
+            return None
+
+        var key = msg[KeyEvent]
+        if (key.code == KeyCode.from_string("q") or key.code == KeyCode.from_string("Q")):
+            self.done = True
+            return None
+
+        # Both paginators track the same position, so they see the same keys.
+        self.pages.update(key)
+        self.dots.update(key)
+        return None
+
+    def view(self) raises -> String:
+        var all = entries()
+        var bounds = self.pages.slice_bounds(UInt16(len(all)))
+
+        var body = String()
+        for i in range(bounds[0], bounds[1]):
+            body.write_string("  ")
+            body.write_string(all[i])
+            body.write_string("\n")
+
+        return String(
+            "Animals\n\n",
+            body,
+            "\n  ",
+            self.dots.view(),
+            "   page ",
+            self.pages.view(),
+            "   showing ",
+            self.pages.items_on_page(UInt16(len(all))),
+            " of ",
+            len(all),
+            "\n",
+            self.help.short_view(self.bindings),
+        )
+
+    def is_done(self) -> Bool:
+        return self.done
+
+
+def main() raises:
+    var model = Model()
+    var rt = Runtime[Model](DefaultSelector(), RENDER_HZ)
+    rt.run(model)
